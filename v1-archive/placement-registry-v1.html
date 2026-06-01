@@ -1,0 +1,2331 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Placement Config — МП ТС5 (прототип)</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #fafbfc;
+    --border: #e4e7ec;
+    --border-strong: #d0d5dd;
+    --text: #101828;
+    --text-muted: #475467;
+    --text-dim: #98a2b3;
+    --brand: #5FAF2D;
+    --brand-soft: #E8F5DC;
+    --brand-dark: #1F4A22;
+    --brand-darker: #14361A;
+    --green: #15803d;
+    --green-soft: #dcfce7;
+    --yellow: #b45309;
+    --yellow-soft: #fef3c7;
+    --red: #b42318;
+    --red-soft: #fee4e2;
+    --purple: #6941c6;
+    --purple-soft: #f4ebff;
+    --gray-soft: #f2f4f7;
+    --shadow-sm: 0 1px 2px rgba(16,24,40,0.06);
+    --shadow-md: 0 4px 12px rgba(16,24,40,0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  /* Layout */
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .sidebar {
+    background: #14361A;
+    color: #e6f4dc;
+    padding: 20px 14px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .brand-logo {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    background: #000;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .brand-text { min-width: 0; }
+  .logo {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 2px;
+    letter-spacing: -0.01em;
+  }
+  .logo-sub {
+    font-size: 11px;
+    color: #a8c79a;
+  }
+  .nav-section {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #7fa570;
+    letter-spacing: 0.06em;
+    margin: 18px 8px 6px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #d5e8c5;
+    font-size: 13.5px;
+    user-select: none;
+  }
+  .nav-item:hover { background: #1F4A22; color: #fff; }
+  .nav-item.active { background: #5FAF2D; color: #fff; }
+  .nav-item .badge {
+    margin-left: auto;
+    background: #1F4A22;
+    color: #d5e8c5;
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 10px;
+  }
+  .nav-item.active .badge { background: rgba(255,255,255,0.25); color: #fff; }
+
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .topbar h1 { margin: 0; font-size: 16px; font-weight: 600; }
+  .topbar .breadcrumb { color: var(--text-muted); font-size: 13px; }
+  .topbar .breadcrumb a { color: var(--brand); cursor: pointer; text-decoration: none; }
+  .topbar .spacer { flex: 1; }
+
+  .role-switch {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--gray-soft);
+    border-radius: 8px;
+    padding: 4px;
+  }
+  .role-switch button {
+    background: transparent;
+    border: 0;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    cursor: pointer;
+    color: var(--text-muted);
+  }
+  .role-switch button.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+    font-weight: 500;
+  }
+  .user-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--gray-soft);
+    border-radius: 999px;
+    padding: 4px 12px 4px 4px;
+    font-size: 13px;
+  }
+  .user-pill .avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--brand); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+  }
+  .user-pill .meta { display: flex; flex-direction: column; line-height: 1.1; }
+  .user-pill .meta small { color: var(--text-dim); font-size: 11px; }
+
+  .content { padding: 24px 28px; max-width: 1500px; width: 100%; }
+
+  /* Cards & components */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm);
+  }
+  .card-pad { padding: 18px 20px; }
+  .stack { display: grid; gap: 16px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+
+  .h2 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .subtle { color: var(--text-muted); font-size: 13px; }
+
+  .kpi { padding: 14px 16px; }
+  .kpi .label { color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .kpi .value { font-size: 26px; font-weight: 600; line-height: 1.1; margin-top: 4px; letter-spacing: -0.01em; }
+  .kpi .hint { color: var(--text-dim); font-size: 12px; margin-top: 4px; }
+
+  /* Filters */
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+    border-radius: 10px 10px 0 0;
+  }
+  .toolbar input[type="text"], .toolbar select {
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    padding: 7px 10px;
+    border-radius: 7px;
+    font-size: 13px;
+    min-width: 0;
+    outline: none;
+    color: var(--text);
+  }
+  .toolbar input[type="text"] { min-width: 280px; }
+  .toolbar input[type="text"]:focus, .toolbar select:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+  .toolbar .right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .btn {
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .btn:hover { background: var(--gray-soft); }
+  .btn-primary {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #1856bc; }
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--brand);
+  }
+  .btn-ghost:hover { background: var(--brand-soft); }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+  /* Table */
+  table.reg {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  table.reg th {
+    text-align: left;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    padding: 10px 14px;
+  }
+  table.reg td {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 14px;
+    vertical-align: middle;
+    font-size: 13.5px;
+  }
+  table.reg tbody tr { cursor: pointer; }
+  table.reg tbody tr:hover { background: var(--surface-2); }
+  table.reg td .pid {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  table.reg td .title { font-weight: 500; }
+
+  /* Chips */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 1.6;
+    background: var(--gray-soft);
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .chip.green { background: var(--green-soft); color: var(--green); }
+  .chip.yellow { background: var(--yellow-soft); color: var(--yellow); }
+  .chip.red { background: var(--red-soft); color: var(--red); }
+  .chip.blue { background: var(--brand-soft); color: var(--brand); }
+  .chip.purple { background: var(--purple-soft); color: var(--purple); }
+  .chip.outline { background: transparent; border: 1px dashed var(--border-strong); color: var(--text-muted); }
+  .chip .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+  }
+
+  /* Detail page */
+  .detail-header { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+  .detail-header h2 { margin: 0; font-size: 20px; }
+  .detail-header .meta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    background: var(--surface);
+    gap: 4px;
+  }
+  .tab {
+    padding: 11px 14px;
+    cursor: pointer;
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    font-size: 13.5px;
+    font-weight: 500;
+    user-select: none;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+
+  /* Definition list */
+  .dl { display: grid; grid-template-columns: 200px 1fr; gap: 10px 16px; }
+  .dl dt { color: var(--text-muted); font-size: 13px; }
+  .dl dd { margin: 0; font-size: 13.5px; }
+  .dl dd code { background: var(--gray-soft); padding: 1px 6px; border-radius: 4px; font-size: 12.5px; }
+
+  /* Code block */
+  pre.code {
+    background: #0f1729;
+    color: #d1d5db;
+    border-radius: 8px;
+    padding: 16px 18px;
+    overflow: auto;
+    font-size: 12.5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    line-height: 1.55;
+  }
+  pre.code .k { color: #93c5fd; }
+  pre.code .s { color: #fcd34d; }
+  pre.code .n { color: #c4b5fd; }
+  pre.code .c { color: #6b7280; font-style: italic; }
+
+  /* Map */
+  .map-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .screen-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .screen-head {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .screen-head .icon {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--brand-soft); color: var(--brand);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .screen-head .title { font-weight: 600; font-size: 13.5px; }
+  .screen-head .count { margin-left: auto; color: var(--text-muted); font-size: 12px; }
+  .screen-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .placement-row {
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 9px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 12.5px;
+  }
+  .placement-row:hover { background: var(--surface-2); border-color: var(--brand); }
+  .placement-row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .placement-row.draft { border-style: dashed; background: var(--yellow-soft); }
+  .placement-row.inactive { border-style: dashed; opacity: 0.7; }
+
+  /* Inactive points */
+  .empty-slot {
+    background: var(--surface);
+    border: 2px dashed var(--border-strong);
+    border-radius: 10px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .empty-slot .reason { color: var(--text-muted); font-size: 13px; }
+
+  /* History feed */
+  .feed { display: flex; flex-direction: column; }
+  .feed-item {
+    display: flex; gap: 14px; padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .feed-item:last-child { border-bottom: 0; }
+  .feed-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--brand-soft); color: var(--brand);
+    font-size: 13px;
+  }
+  .feed-dot.green { background: var(--green-soft); color: var(--green); }
+  .feed-dot.yellow { background: var(--yellow-soft); color: var(--yellow); }
+  .feed-body .actor { font-weight: 500; }
+  .feed-body .ts { color: var(--text-dim); font-size: 12px; }
+  .feed-body .desc { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+
+  /* Simple bars */
+  .bar {
+    height: 6px; background: var(--gray-soft); border-radius: 3px; overflow: hidden;
+  }
+  .bar > span { display: block; height: 100%; background: var(--brand); }
+
+  /* Sparkline */
+  .spark { width: 90px; height: 28px; }
+
+  /* Mini stat bar */
+  .stat-line { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .stat-line .item { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 12.5px; }
+  .stat-line .item b { color: var(--text); font-weight: 500; }
+
+  /* Banner */
+  .banner {
+    background: linear-gradient(90deg, #eef4ff 0%, #f4ebff 100%);
+    border: 1px solid #d6e4ff;
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .banner .icon { font-size: 22px; }
+  .banner .title { font-weight: 600; font-size: 14px; }
+  .banner .desc { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+
+  /* Modal */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(16,24,40,0.5);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 12px;
+    width: 560px;
+    max-width: 92vw;
+    max-height: 88vh;
+    overflow: auto;
+    box-shadow: var(--shadow-md);
+  }
+  .modal h3 { margin: 0 0 6px; font-size: 17px; }
+  .modal .modal-head { padding: 18px 22px; border-bottom: 1px solid var(--border); }
+  .modal .modal-body { padding: 18px 22px; }
+  .modal .modal-foot { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+  .form-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .form-row label { font-size: 12.5px; color: var(--text-muted); font-weight: 500; }
+  .form-row input, .form-row select, .form-row textarea {
+    border: 1px solid var(--border-strong);
+    border-radius: 7px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+  }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+    border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft);
+  }
+
+  /* AB block */
+  .ab-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .ab-card .metric { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 13px; }
+  .ab-card .metric b { font-weight: 600; }
+
+  /* Lifecycle pill */
+  .lifecycle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+  }
+  .lifecycle .step {
+    display: flex; align-items: center; gap: 4px; color: var(--text-dim);
+  }
+  .lifecycle .step.done { color: var(--green); }
+  .lifecycle .step.active { color: var(--brand); font-weight: 500; }
+  .lifecycle .arrow { color: var(--text-dim); }
+
+  /* Permissions chip */
+  .perm-chip { font-size: 11.5px; padding: 1px 7px; border-radius: 4px; background: var(--gray-soft); color: var(--text-muted); }
+  .perm-chip.write { background: var(--green-soft); color: var(--green); }
+  .perm-chip.read  { background: var(--brand-soft); color: var(--brand); }
+  .perm-chip.none  { background: var(--gray-soft); color: var(--text-dim); }
+  .perm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .perm-table td, .perm-table th { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .perm-table th { background: var(--surface-2); text-align: left; font-weight: 600; color: var(--text-muted); }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 40px 20px;
+  }
+  .empty .big { font-size: 30px; margin-bottom: 8px; }
+
+  /* Tooltip-ish */
+  .hint-inline { color: var(--text-dim); font-size: 12px; }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { position: relative; height: auto; }
+    .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo" aria-label="X5">
+        <svg width="34" height="34" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Leaf -->
+          <path d="M33 4 C36 4 37 7 36.5 11 C34.5 25 23 36 9 36 C5 36 3 33.5 3.5 29 C5 16 16 4 33 4 Z" fill="#5FAF2D"/>
+          <!-- Subtle leaf vein -->
+          <path d="M11 31 C14 22 21 13 31 7" stroke="rgba(0,0,0,0.18)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          <!-- X5 wordmark -->
+          <text x="20" y="33" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="900" fill="#0a0a0a" text-anchor="middle" style="letter-spacing:-0.5px">X5</text>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <div class="logo">Placement Config</div>
+        <div class="logo-sub">МП ТС5 · v0.1 (прототип)</div>
+      </div>
+    </div>
+
+    <div class="nav-section">Реестр</div>
+    <div class="nav-item active" data-route="placements">📋 Плейсменты <span class="badge" id="nav-count-placements">0</span></div>
+    <div class="nav-item" data-route="map">🗺️ Карта по экранам</div>
+    <div class="nav-item" data-route="inactive">⬚ Неактивированные точки <span class="badge" id="nav-count-inactive">0</span></div>
+    <div class="nav-item" data-route="requests">📥 Заявки <span class="badge" id="nav-count-requests">0</span></div>
+
+    <div class="nav-section">Аналитика</div>
+    <div class="nav-item" data-route="overview">📊 Обзор</div>
+    <div class="nav-item" data-route="audit">🕘 Аудит изменений</div>
+
+    <div class="nav-section">Настройки</div>
+    <div class="nav-item" data-route="roles">👥 Ролевая модель</div>
+    <div class="nav-item" data-route="api">🔌 API контракт</div>
+
+    <div style="margin-top: 30px; padding: 12px; background: #1F4A22; border-radius: 8px; font-size: 12px; color: #b8d3a4;">
+      <div style="color: #fff; font-weight: 500; margin-bottom: 4px;">⚠️ Демо-данные</div>
+      Все значения — моки на основе материалов проекта. Никаких реальных API-вызовов.
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">
+        <a id="bc-home">Реестр</a>
+        <span id="bc-tail"></span>
+      </div>
+      <div class="spacer"></div>
+
+      <div class="role-switch" id="role-switch">
+        <button data-role="admin" class="active">Админ</button>
+        <button data-role="media">Владелец · Media</button>
+        <button data-role="trade">Владелец · Trade-Promo</button>
+        <button data-role="loyalty">Владелец · Лояльность</button>
+      </div>
+
+      <div class="user-pill">
+        <span class="avatar" id="user-avatar">АР</span>
+        <span class="meta">
+          <span id="user-name">Админ реестра</span>
+          <small id="user-team">Команда Каталог</small>
+        </span>
+      </div>
+    </div>
+
+    <div class="content" id="content"></div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <h3 id="modal-title">—</h3>
+      <div class="subtle" id="modal-subtitle">—</div>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-primary" id="modal-ok" onclick="closeModal()">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =============================================================
+   ДАННЫЕ — мок реестра плейсментов МП ТС5
+   ============================================================= */
+
+const OWNERS = ['Каталог', 'X5 Media', 'Trade-Promo', 'Лояльность', 'RecSys'];
+const SOURCES = ['recsys', 'pbase', 'catalog', 'customer'];
+const TYPES = ['ml', 'manual', 'auto', 'hybrid'];
+const RANKING = ['pers-recsys', 'default', 'custom', '—'];
+const CONTEXTS = ['user', 'product', 'cart', 'category', '—'];
+
+// На основе таблиц из docx и pdf
+const PLACEMENTS = [
+  {
+    id: 'home.recsys.foryou',
+    title: 'Главная · Подобрали для вас',
+    screen: 'Главная',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    blender_enabled: false,
+    fallback_type: 'top-popular',
+    context_type: 'user',
+    limit: 30,
+    filters: { discount_only: false },
+    status: 'active',
+    ab_status: { phase: 'rolled-out', color: 'green', delta_margin: '+0,33%', delta_items: '+0,44%' },
+    metrics: { rps: 1240, p95_ms: 220, error_rate: 0.4, last_request: '5 сек назад' },
+    business: { rto: '+0,33%', margin: '+0,33%', ctr: 8.4 },
+    description: 'Bert4Rec + CatBoost-реранкер. Пересчёт ежедневно для пользователей с новой покупкой.',
+    docs_url: '#',
+  },
+  {
+    id: 'home.recsys.profitable',
+    title: 'Главная · Выгодно купить ещё',
+    screen: 'Главная',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    blender_enabled: false,
+    fallback_type: 'top-popular',
+    context_type: 'user',
+    limit: 30,
+    status: 'active',
+    ab_status: { phase: 'rolled-out', color: 'green', delta_margin: '+0,28%', delta_items: '+0,15%' },
+    metrics: { rps: 980, p95_ms: 240, error_rate: 0.3, last_request: '8 сек назад' },
+    business: { rto: '+0,28%', margin: '+0,28%', ctr: 7.1 },
+    description: 'Маржинальный фокус. Подмешиваем товары с высокой маржой.',
+  },
+  {
+    id: 'cart.recsys.dontforget',
+    title: 'Корзина · Не забудьте купить',
+    screen: 'Корзина',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'hybrid',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    blender_enabled: false,
+    fallback_type: 'manual-shelf',
+    context_type: 'cart',
+    limit: 20,
+    status: 'active',
+    ab_status: { phase: 'rolled-out', color: 'green', delta_margin: '+0,39%', delta_items: '+0,55%' },
+    metrics: { rps: 740, p95_ms: 280, error_rate: 0.5, last_request: '3 сек назад' },
+    business: { rto: '+0,55%', margin: '+0,39%', ctr: 11.2 },
+    description: 'Контроль — карусель с ручными подборками. Тест — карусель + вертикальный скролл RecSys.',
+  },
+  {
+    id: 'cart.recsys.vscroll',
+    title: 'Корзина · Вертикальный скролл рекомендаций',
+    screen: 'Корзина',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    blender_enabled: false,
+    fallback_type: 'none',
+    context_type: 'cart',
+    limit: 30,
+    status: 'active',
+    ab_status: { phase: 'rolled-out', color: 'green', delta_margin: '+0,39%' },
+    metrics: { rps: 540, p95_ms: 310, error_rate: 0.6, last_request: '12 сек назад' },
+    business: { rto: '+0,55%', margin: '+0,39%', ctr: 9.7 },
+  },
+  {
+    id: 'checkout.recsys.before-pay',
+    title: 'Оформление заказа · Рекомендации перед оплатой',
+    screen: 'Чекаут',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    blender_enabled: false,
+    fallback_type: 'none',
+    context_type: 'cart',
+    limit: 30,
+    status: 'active',
+    ab_status: { phase: 'rolled-out', color: 'green', delta_margin: '+0,48%', delta_items: '+0,33%' },
+    metrics: { rps: 410, p95_ms: 260, error_rate: 0.7, last_request: '15 сек назад' },
+    business: { rto: '+0,33%', margin: '+0,48%', ctr: 6.4 },
+  },
+  {
+    id: 'search.recsys.start',
+    title: 'Поиск · Карусель на стартовой',
+    screen: 'Поиск',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    blender_enabled: false,
+    fallback_type: 'top-popular',
+    context_type: 'user',
+    limit: 30,
+    status: 'active',
+    ab_status: { phase: 'rolled-out', color: 'green', delta_margin: '+0,33%' },
+    metrics: { rps: 1620, p95_ms: 210, error_rate: 0.3, last_request: '2 сек назад' },
+    business: { rto: '+0,33%', margin: '+0,33%', ctr: 12.5 },
+  },
+  {
+    id: 'search.recsys.empty',
+    title: 'Поиск · Карусель на пустом поиске',
+    screen: 'Поиск',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    blender_enabled: false,
+    fallback_type: 'top-popular',
+    context_type: 'user',
+    limit: 30,
+    status: 'active',
+    ab_status: { phase: 'rolled-out', color: 'gray', note: 'Серый тест — раскатан для развития моделей RecSys' },
+    metrics: { rps: 230, p95_ms: 195, error_rate: 0.2, last_request: '40 сек назад' },
+    business: { ctr: 4.1 },
+  },
+  {
+    id: 'pdp.recsys.similar',
+    title: 'Карточка товара · Похожие товары',
+    screen: 'Карточка товара',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: false,
+    blender_enabled: false,
+    fallback_type: 'top-category',
+    context_type: 'product',
+    limit: 25,
+    status: 'active',
+    ab_status: { phase: 'rolled-out', color: 'green', delta_margin: '+0,33%', delta_avg_check: '+0,13%' },
+    metrics: { rps: 2150, p95_ms: 180, error_rate: 0.2, last_request: '1 сек назад' },
+    business: { margin: '+0,33%', ctr: 9.2 },
+    description: 'Контекстная неперсонализированная LLM-модель, формирует до 25 комплементов на товар.',
+  },
+  {
+    id: 'pdp.recsys.complementary',
+    title: 'Карточка товара · Комплиментарные',
+    screen: 'Карточка товара',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: false,
+    blender_enabled: false,
+    fallback_type: 'none',
+    context_type: 'product',
+    limit: 25,
+    status: 'active',
+    ab_status: { phase: 'rolled-out', color: 'green', delta_avg_check: '+0,13%', delta_margin: '+0,33%' },
+    metrics: { rps: 1980, p95_ms: 175, error_rate: 0.2, last_request: '1 сек назад' },
+    business: { margin: '+0,33%', avg_check: '+0,13%', ctr: 8.7 },
+  },
+  {
+    id: 'pdp.recsys.youlike',
+    title: 'Карточка товара · Вам понравится',
+    screen: 'Карточка товара',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    blender_enabled: false,
+    fallback_type: 'none',
+    context_type: 'product',
+    limit: 20,
+    status: 'active',
+    ab_status: { phase: 'in-progress', color: 'yellow', note: 'A/B-тест активен, окончание ~3 дня' },
+    metrics: { rps: 760, p95_ms: 230, error_rate: 0.5, last_request: '6 сек назад' },
+    business: { ctr: 5.9 },
+  },
+  {
+    id: 'category.recsys.recommend',
+    title: 'Категория · Рекомендуем',
+    screen: 'Листинг',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    blender_enabled: false,
+    fallback_type: 'top-category',
+    context_type: 'category',
+    limit: 20,
+    status: 'active',
+    ab_status: { phase: 'rolled-out', color: 'gray', note: 'Серый тест, раскатан после отказа от Б1' },
+    metrics: { rps: 1320, p95_ms: 195, error_rate: 0.3, last_request: '4 сек назад' },
+    business: { ctr: 7.8 },
+  },
+  {
+    id: 'category.recsys.bought-with',
+    title: 'Категория · С этим часто покупают',
+    screen: 'Листинг',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: false,
+    blender_enabled: false,
+    fallback_type: 'top-category',
+    context_type: 'category',
+    limit: 20,
+    status: 'active',
+    ab_status: { phase: 'planned', color: 'gray', note: 'A/B запланирован на след. квартал' },
+    metrics: { rps: 480, p95_ms: 210, error_rate: 0.4, last_request: '11 сек назад' },
+    business: { ctr: 4.3 },
+  },
+  {
+    id: 'category.manual.2lvl',
+    title: 'Каталог · Экран категорий 2 уровня',
+    screen: 'Каталог',
+    owner: 'Каталог',
+    source: 'pbase',
+    formation_type: 'manual',
+    ranking_type: 'default',
+    personalization: false,
+    blender_enabled: false,
+    fallback_type: 'none',
+    context_type: 'category',
+    limit: 50,
+    status: 'active',
+    ab_status: { phase: 'none', color: 'gray' },
+    metrics: { rps: 1880, p95_ms: 110, error_rate: 0.1, last_request: '1 сек назад' },
+    business: { ctr: 5.2 },
+  },
+  {
+    id: 'category.manual.3lvl',
+    title: 'Каталог · Категории 3 уровня',
+    screen: 'Каталог',
+    owner: 'Каталог',
+    source: 'pbase',
+    formation_type: 'manual',
+    ranking_type: 'default',
+    personalization: false,
+    blender_enabled: false,
+    fallback_type: 'none',
+    context_type: 'category',
+    limit: 100,
+    status: 'active',
+    ab_status: { phase: 'none', color: 'gray' },
+    metrics: { rps: 940, p95_ms: 120, error_rate: 0.1, last_request: '2 сек назад' },
+    business: { ctr: 4.7 },
+  },
+  {
+    id: 'home.media.hidden',
+    title: 'Главная · Скрытая подборка X5 Media',
+    screen: 'Главная',
+    owner: 'X5 Media',
+    source: 'pbase',
+    formation_type: 'manual',
+    ranking_type: 'default',
+    personalization: false,
+    blender_enabled: false,
+    fallback_type: 'none',
+    context_type: '—',
+    limit: 40,
+    status: 'active',
+    ab_status: { phase: 'none', color: 'gray' },
+    metrics: { rps: 220, p95_ms: 145, error_rate: 0.2, last_request: '24 сек назад' },
+    business: { ctr: 3.1 },
+    description: 'Управляется из админки X5 Media. Категории до 2 уровней + PLU. Catalog обогащает контентом и проверяет наличие.',
+  },
+  {
+    id: 'home.media.banner-shelf',
+    title: 'Главная · Витрина по баннеру Media',
+    screen: 'Главная',
+    owner: 'X5 Media',
+    source: 'pbase',
+    formation_type: 'manual',
+    ranking_type: 'default',
+    personalization: false,
+    blender_enabled: false,
+    fallback_type: 'none',
+    context_type: '—',
+    limit: 30,
+    status: 'active',
+    ab_status: { phase: 'planned', color: 'gray' },
+    metrics: { rps: 180, p95_ms: 160, error_rate: 0.3, last_request: '47 сек назад' },
+    business: { ctr: 4.5 },
+  },
+  {
+    id: 'home.catalog.discounts',
+    title: 'Главная · Акции и скидки',
+    screen: 'Главная',
+    owner: 'Trade-Promo',
+    source: 'catalog',
+    formation_type: 'auto',
+    ranking_type: 'default',
+    personalization: false,
+    blender_enabled: false,
+    fallback_type: 'none',
+    context_type: '—',
+    limit: 50,
+    filters: { discount_only: true },
+    status: 'active',
+    ab_status: { phase: 'none', color: 'gray' },
+    metrics: { rps: 880, p95_ms: 130, error_rate: 0.2, last_request: '4 сек назад' },
+    business: { ctr: 9.8 },
+  },
+  {
+    id: 'profile.favorites',
+    title: 'Профиль · Избранные товары',
+    screen: 'Профиль',
+    owner: 'Лояльность',
+    source: 'customer',
+    formation_type: 'manual',
+    ranking_type: 'default',
+    personalization: true,
+    blender_enabled: false,
+    fallback_type: 'none',
+    context_type: 'user',
+    limit: 200,
+    status: 'active',
+    ab_status: { phase: 'none', color: 'gray' },
+    metrics: { rps: 320, p95_ms: 90, error_rate: 0.1, last_request: '7 сек назад' },
+    business: { ctr: 14.2 },
+  },
+  {
+    id: 'profile.bought',
+    title: 'Профиль · Купленные',
+    screen: 'Профиль',
+    owner: 'Лояльность',
+    source: 'customer',
+    formation_type: 'manual',
+    ranking_type: 'default',
+    personalization: true,
+    blender_enabled: false,
+    fallback_type: 'none',
+    context_type: 'user',
+    limit: 200,
+    status: 'active',
+    ab_status: { phase: 'none', color: 'gray' },
+    metrics: { rps: 410, p95_ms: 95, error_rate: 0.1, last_request: '5 сек назад' },
+    business: { ctr: 18.7 },
+  },
+  {
+    id: 'category.listing.personal-ranking',
+    title: 'Листинг · Персональное ранжирование',
+    screen: 'Листинг',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    blender_enabled: false,
+    fallback_type: 'default-catalog',
+    context_type: 'category',
+    limit: 200,
+    status: 'active',
+    ab_status: { phase: 'rolled-out', color: 'gray', note: 'Серый тест с Б1, раскатан после отказа от Б1' },
+    metrics: { rps: 2810, p95_ms: 230, error_rate: 0.4, last_request: '1 сек назад' },
+    business: { ctr: 11.6 },
+  },
+  {
+    id: 'category.chips.recommend',
+    title: 'Листинг · Чипс «Рекомендуем»',
+    screen: 'Листинг',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    blender_enabled: false,
+    fallback_type: 'top-category',
+    context_type: 'category',
+    limit: 30,
+    status: 'active',
+    ab_status: { phase: 'rolled-out', color: 'gray' },
+    metrics: { rps: 1140, p95_ms: 220, error_rate: 0.4, last_request: '3 сек назад' },
+    business: { ctr: 6.9 },
+  },
+  {
+    id: 'loyalty.favcat.success',
+    title: 'Лояльность · Экран успеха выбора любимых категорий',
+    screen: 'Любимые категории',
+    owner: 'Лояльность',
+    source: 'customer',
+    formation_type: 'hybrid',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    blender_enabled: false,
+    fallback_type: 'top-popular',
+    context_type: 'user',
+    limit: 30,
+    status: 'active',
+    ab_status: { phase: 'planned', color: 'gray', note: 'Подборка PLU из выбранных пользователем категорий' },
+    metrics: { rps: 95, p95_ms: 280, error_rate: 0.6, last_request: '1 мин назад' },
+    business: { ctr: 16.3 },
+    description: 'Favorite-Categories-Service отдаёт PLU + id category, MS Catalog обогащает.',
+  },
+  {
+    id: 'cart.draft.empty-cart',
+    title: 'Корзина · Полка на пустом экране (новая)',
+    screen: 'Корзина',
+    owner: 'X5 Media',
+    source: '—',
+    formation_type: '—',
+    ranking_type: '—',
+    personalization: false,
+    blender_enabled: false,
+    fallback_type: 'none',
+    context_type: '—',
+    limit: 0,
+    status: 'draft',
+    ab_status: { phase: 'planned', color: 'gray', note: 'Зарегистрирован автоматически discovery-агентом 2026-05-17' },
+    metrics: { rps: 0, p95_ms: 0, error_rate: 0, last_request: '—' },
+    business: {},
+    description: 'Заявка на регистрацию плейсмента подана автоматически: обнаружен запрос с неизвестным placement_id. Ожидает подтверждения админом.',
+  },
+  {
+    id: 'home.trade.promo-week',
+    title: 'Главная · Промо-неделя (Trade-Promo)',
+    screen: 'Главная',
+    owner: 'Trade-Promo',
+    source: 'pbase',
+    formation_type: 'manual',
+    ranking_type: 'default',
+    personalization: false,
+    blender_enabled: false,
+    fallback_type: 'none',
+    context_type: '—',
+    limit: 25,
+    filters: { discount_only: true },
+    status: 'active',
+    ab_status: { phase: 'in-progress', color: 'yellow', note: 'Промо-кампания недели' },
+    metrics: { rps: 310, p95_ms: 140, error_rate: 0.3, last_request: '15 сек назад' },
+    business: { ctr: 8.2 },
+  },
+  {
+    id: 'category.catalog.novelty',
+    title: 'Каталог · Новинки (перспектива)',
+    screen: 'Каталог',
+    owner: 'Каталог',
+    source: 'catalog',
+    formation_type: 'auto',
+    ranking_type: 'default',
+    personalization: false,
+    blender_enabled: false,
+    fallback_type: 'none',
+    context_type: '—',
+    limit: 40,
+    status: 'archived',
+    ab_status: { phase: 'none', color: 'gray', note: 'Архивирован — функционал перенесён в Главная.Подобрали для вас' },
+    metrics: { rps: 0, p95_ms: 0, error_rate: 0, last_request: '13 дней назад' },
+    business: {},
+  },
+];
+
+// Неактивированные точки размещения
+const INACTIVE_SLOTS = [
+  {
+    id: 'slot.empty-cart.shelf',
+    screen: 'Корзина',
+    name: 'Полка на пустом экране корзины',
+    reason: 'Пользователь зашёл в корзину без товаров. Потенциал: рекомендации RecSys или промо-полка.',
+    suggested_owners: ['Каталог', 'Trade-Promo', 'X5 Media'],
+    estimated_traffic: '~ 12 000 показов/день',
+  },
+  {
+    id: 'slot.pdp.oos-substitutes',
+    screen: 'Карточка товара',
+    name: 'Экран ошибки «товар не в наличии»',
+    reason: 'Товар отсутствует в магазине. Потенциал: товары-заменители из RecSys (контекстная модель).',
+    suggested_owners: ['Каталог'],
+    estimated_traffic: '~ 4 500 показов/день',
+  },
+  {
+    id: 'slot.order.thankyou',
+    screen: 'Спасибо за заказ',
+    name: 'Допродажи на экране подтверждения заказа',
+    reason: 'Пользователь только что оформил заказ. Возможны товары-комплименты или промо-полка Trade-Promo.',
+    suggested_owners: ['Trade-Promo', 'Каталог'],
+    estimated_traffic: '~ 8 200 показов/день',
+  },
+  {
+    id: 'slot.search.no-results',
+    screen: 'Поиск',
+    name: 'Полка при отсутствии результатов поиска',
+    reason: 'Запрос не дал результатов. Потенциал: рекомендации по контексту последнего товара / категории.',
+    suggested_owners: ['Каталог'],
+    estimated_traffic: '~ 2 100 показов/день',
+  },
+  {
+    id: 'slot.profile.come-back',
+    screen: 'Профиль',
+    name: 'Полка «Купить ещё» (товары, которые заканчиваются)',
+    reason: 'Пользователь зашёл в профиль через 7+ дней. Потенциал: персональная RecSys-полка.',
+    suggested_owners: ['Каталог', 'Лояльность'],
+    estimated_traffic: '~ 6 700 показов/день',
+  },
+];
+
+// Заявки на регистрацию
+const REQUESTS = [
+  {
+    id: 'REQ-2026-031',
+    type: 'auto-discovery',
+    title: 'Обнаружен новый placement_id: cart.draft.empty-cart',
+    description: 'Discovery-агент зафиксировал запросы из МП с неизвестным placement_id. Stacktrace указывает на X5 Media.',
+    status: 'pending',
+    requester: 'system',
+    created_at: '2026-05-17 14:22',
+    placement_owner_proposed: 'X5 Media',
+  },
+  {
+    id: 'REQ-2026-029',
+    type: 'manual',
+    title: 'X5 Media: новая витрина на главной по баннеру осенней кампании',
+    description: 'Запрос на регистрацию плейсмента под баннер «Осенняя витрина». Источник — собственная админка Media. Структура категорий до 2 уровней.',
+    status: 'in-review',
+    requester: 'A. Зайцев (X5 Media)',
+    created_at: '2026-05-15 11:05',
+    placement_owner_proposed: 'X5 Media',
+  },
+  {
+    id: 'REQ-2026-028',
+    type: 'change',
+    title: 'Trade-Promo: включить RecSys-ранжирование для «Главная · Акции и скидки»',
+    description: 'Переход с дефолтного ранжирования на персональное (pers-recsys). Просьба согласовать с командой RecSys.',
+    status: 'in-review',
+    requester: 'М. Кузнецова (Trade-Promo)',
+    created_at: '2026-05-14 16:50',
+    placement_owner_proposed: 'Trade-Promo',
+  },
+  {
+    id: 'REQ-2026-025',
+    type: 'slot-claim',
+    title: 'Лояльность: занять неактивированную точку «Полка «Купить ещё» в профиле»',
+    description: 'Заявка на использование неактивированной точки. Будет персональная подборка из часто покупаемых товаров.',
+    status: 'approved',
+    requester: 'Д. Кравец (Лояльность)',
+    created_at: '2026-05-12 09:18',
+    placement_owner_proposed: 'Лояльность',
+  },
+];
+
+// Аудит
+const AUDIT = [
+  { ts: '2026-05-19 10:34', actor: 'Админ реестра', action: 'approve', desc: 'Одобрена заявка REQ-2026-025: точка slot.profile.come-back передана команде Лояльность.' },
+  { ts: '2026-05-19 09:51', actor: 'А. Зайцев (X5 Media)', action: 'edit', desc: 'Изменён конфиг плейсмента home.media.hidden: добавлен фильтр по сезону.' },
+  { ts: '2026-05-18 17:22', actor: 'system / discovery', action: 'discover', desc: 'Обнаружен новый placement_id: cart.draft.empty-cart. Создана заявка REQ-2026-031.' },
+  { ts: '2026-05-18 14:10', actor: 'Админ реестра', action: 'archive', desc: 'Плейсмент category.catalog.novelty переведён в архив.' },
+  { ts: '2026-05-17 11:05', actor: 'М. Кузнецова (Trade-Promo)', action: 'request', desc: 'Запрошен переход на pers-recsys для home.catalog.discounts.' },
+  { ts: '2026-05-15 09:30', actor: 'system', action: 'rollout', desc: 'AB-тест home.recsys.foryou закрыт: модель RecSys раскатана на 100%.' },
+  { ts: '2026-05-13 12:48', actor: 'Админ реестра', action: 'create', desc: 'Создан плейсмент loyalty.favcat.success (Лояльность).' },
+];
+
+/* =============================================================
+   СОСТОЯНИЕ
+   ============================================================= */
+const STATE = {
+  route: 'placements',
+  detailId: null,
+  detailTab: 'overview',
+  role: 'admin',
+  filter: { search: '', owner: '', source: '', type: '', status: '' },
+};
+
+const ROLES = {
+  admin:   { name: 'Админ реестра', team: 'Команда Каталог', avatar: 'АР', filterOwner: null },
+  media:   { name: 'А. Зайцев', team: 'X5 Media', avatar: 'АЗ', filterOwner: 'X5 Media' },
+  trade:   { name: 'М. Кузнецова', team: 'Trade-Promo', avatar: 'МК', filterOwner: 'Trade-Promo' },
+  loyalty: { name: 'Д. Кравец', team: 'Лояльность', avatar: 'ДК', filterOwner: 'Лояльность' },
+};
+
+/* =============================================================
+   ХЕЛПЕРЫ РЕНДЕРА
+   ============================================================= */
+
+function el(html) {
+  const t = document.createElement('template');
+  t.innerHTML = html.trim();
+  return t.content.firstElementChild;
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function sourceLabel(s) {
+  return { recsys: 'RecSys (ML)', pbase: 'pBase / Promo', catalog: 'Catalog', customer: 'Customer' }[s] || s;
+}
+function sourceChip(s) {
+  const map = { recsys: 'blue', pbase: 'purple', catalog: 'yellow', customer: 'green' };
+  return `<span class="chip ${map[s] || ''}"><span class="dot"></span>${sourceLabel(s) || '—'}</span>`;
+}
+function statusChip(st) {
+  const map = { active: ['green', 'активен'], draft: ['yellow', 'черновик'], archived: ['', 'в архиве'] };
+  const [cls, label] = map[st] || ['', st];
+  return `<span class="chip ${cls}">${label}</span>`;
+}
+function abChip(ab) {
+  if (!ab) return '<span class="chip">—</span>';
+  const colorMap = { green: 'green', yellow: 'yellow', red: 'red', gray: '' };
+  const phaseLabel = { 'rolled-out': 'раскатан 100%', 'in-progress': 'A/B активен', 'planned': 'запланирован', 'none': 'без AB' }[ab.phase] || ab.phase;
+  return `<span class="chip ${colorMap[ab.color] || ''}">${phaseLabel}</span>`;
+}
+function personalizationChip(p) {
+  return p ? `<span class="chip green">персонализован</span>` : `<span class="chip">не персон.</span>`;
+}
+
+// Сегодняшняя дата для шапки
+function todayLabel() {
+  return new Date().toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+/* =============================================================
+   НАВИГАЦИЯ
+   ============================================================= */
+
+function navigate(route, detailId=null, detailTab='overview') {
+  STATE.route = route;
+  STATE.detailId = detailId;
+  STATE.detailTab = detailTab;
+  // Active link
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.route === route && !detailId));
+  // Breadcrumb
+  const tail = document.getElementById('bc-tail');
+  if (detailId) {
+    const p = PLACEMENTS.find(x => x.id === detailId);
+    tail.innerHTML = ` › ${escapeHtml(p?.title || detailId)}`;
+  } else {
+    const titles = { placements: 'Плейсменты', map: 'Карта по экранам', inactive: 'Неактивированные точки', requests: 'Заявки', overview: 'Обзор', audit: 'Аудит', roles: 'Ролевая модель', api: 'API контракт' };
+    tail.innerHTML = ` › ${titles[route] || ''}`;
+  }
+  render();
+}
+
+document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => navigate(n.dataset.route)));
+document.getElementById('bc-home').addEventListener('click', () => navigate('placements'));
+
+document.querySelectorAll('#role-switch button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#role-switch button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    STATE.role = b.dataset.role;
+    const r = ROLES[STATE.role];
+    document.getElementById('user-name').textContent = r.name;
+    document.getElementById('user-team').textContent = r.team;
+    document.getElementById('user-avatar').textContent = r.avatar;
+    render();
+  });
+});
+
+/* =============================================================
+   ВИДИМЫЕ ПЛЕЙСМЕНТЫ ПО РОЛИ
+   ============================================================= */
+
+function visiblePlacements() {
+  const r = ROLES[STATE.role];
+  if (r.filterOwner) return PLACEMENTS.filter(p => p.owner === r.filterOwner);
+  return PLACEMENTS;
+}
+
+function canEdit(placement) {
+  if (STATE.role === 'admin') return true;
+  const r = ROLES[STATE.role];
+  return r.filterOwner && placement.owner === r.filterOwner;
+}
+
+/* =============================================================
+   РЕНДЕР: список плейсментов
+   ============================================================= */
+
+function renderPlacementsList() {
+  const visible = visiblePlacements();
+  const f = STATE.filter;
+  let rows = visible.filter(p => {
+    if (f.search && !(p.id.includes(f.search.toLowerCase()) || p.title.toLowerCase().includes(f.search.toLowerCase()))) return false;
+    if (f.owner && p.owner !== f.owner) return false;
+    if (f.source && p.source !== f.source) return false;
+    if (f.type && p.formation_type !== f.type) return false;
+    if (f.status && p.status !== f.status) return false;
+    return true;
+  });
+
+  // KPI
+  const activeCount = visible.filter(x => x.status === 'active').length;
+  const draftCount = visible.filter(x => x.status === 'draft').length;
+  const recsysShare = Math.round(visible.filter(x => x.source === 'recsys').length / visible.length * 100);
+  const personShare = Math.round(visible.filter(x => x.personalization).length / visible.length * 100);
+
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+
+  // Header
+  root.appendChild(el(`
+    <div class="stack">
+      <div>
+        <h2 class="h2">Реестр плейсментов</h2>
+        <div class="subtle">Единый список товарных подборок в МП ТС5. ${STATE.role !== 'admin' ? `Вы видите только плейсменты команды <b>${ROLES[STATE.role].filterOwner}</b>.` : 'Полный доступ.'}</div>
+      </div>
+
+      <div class="grid-4">
+        <div class="card kpi"><div class="label">Всего плейсментов</div><div class="value">${visible.length}</div><div class="hint">${activeCount} активных, ${draftCount} черновиков</div></div>
+        <div class="card kpi"><div class="label">Источник RecSys</div><div class="value">${recsysShare}%</div><div class="hint">от всех плейсментов</div></div>
+        <div class="card kpi"><div class="label">Персонализированы</div><div class="value">${personShare}%</div><div class="hint">остальные 50% — точки роста</div></div>
+        <div class="card kpi"><div class="label">Владельцев</div><div class="value">${new Set(visible.map(x=>x.owner)).size}</div><div class="hint">${[...new Set(visible.map(x=>x.owner))].join(' · ')}</div></div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <input type="text" id="f-search" placeholder="🔎 Поиск по placement_id или названию" value="${escapeHtml(f.search)}">
+          <select id="f-owner">
+            <option value="">Все владельцы</option>
+            ${OWNERS.map(o => `<option value="${o}" ${f.owner===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+          <select id="f-source">
+            <option value="">Все источники</option>
+            ${SOURCES.map(s => `<option value="${s}" ${f.source===s?'selected':''}>${sourceLabel(s)}</option>`).join('')}
+          </select>
+          <select id="f-type">
+            <option value="">Все типы</option>
+            ${TYPES.map(t => `<option value="${t}" ${f.type===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+          <select id="f-status">
+            <option value="">Все статусы</option>
+            <option value="active" ${f.status==='active'?'selected':''}>активные</option>
+            <option value="draft"  ${f.status==='draft'?'selected':''}>черновики</option>
+            <option value="archived" ${f.status==='archived'?'selected':''}>в архиве</option>
+          </select>
+          <div class="right">
+            ${STATE.role !== 'admin' ? `<button class="btn btn-primary" id="btn-new-request">+ Заявить плейсмент</button>` : `<button class="btn btn-primary" id="btn-new-placement">+ Новый плейсмент</button>`}
+          </div>
+        </div>
+        <table class="reg">
+          <thead>
+            <tr>
+              <th style="width: 34%;">Плейсмент</th>
+              <th>Экран</th>
+              <th>Владелец</th>
+              <th>Источник</th>
+              <th>Ранжирование</th>
+              <th>RPS</th>
+              <th>A/B</th>
+              <th>Статус</th>
+            </tr>
+          </thead>
+          <tbody id="reg-tbody">
+            ${rows.length ? rows.map(p => `
+              <tr data-id="${p.id}">
+                <td>
+                  <div class="title">${escapeHtml(p.title)}</div>
+                  <div class="pid">${p.id}</div>
+                </td>
+                <td>${escapeHtml(p.screen)}</td>
+                <td><span class="chip outline">${escapeHtml(p.owner)}</span></td>
+                <td>${sourceChip(p.source)}</td>
+                <td>${p.ranking_type === 'pers-recsys' ? '<span class="chip blue">pers-recsys</span>' : (p.ranking_type === 'default' ? '<span class="chip">default</span>' : `<span class="chip">${p.ranking_type}</span>`)}</td>
+                <td><b>${p.metrics.rps.toLocaleString('ru-RU')}</b> <span class="hint-inline">/с</span></td>
+                <td>${abChip(p.ab_status)}</td>
+                <td>${statusChip(p.status)}</td>
+              </tr>
+            `).join('') : `<tr><td colspan="8"><div class="empty"><div class="big">🔍</div>Ничего не найдено по вашим фильтрам</div></td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `));
+
+  // Bindings
+  document.getElementById('f-search').addEventListener('input', e => { STATE.filter.search = e.target.value; renderPlacementsList(); });
+  ['owner','source','type','status'].forEach(k => {
+    document.getElementById(`f-${k}`).addEventListener('change', e => { STATE.filter[k] = e.target.value; renderPlacementsList(); });
+  });
+  document.querySelectorAll('#reg-tbody tr[data-id]').forEach(tr => {
+    tr.addEventListener('click', () => navigate('placements', tr.dataset.id));
+  });
+  if (document.getElementById('btn-new-placement')) {
+    document.getElementById('btn-new-placement').addEventListener('click', () => openModal('new-placement'));
+  }
+  if (document.getElementById('btn-new-request')) {
+    document.getElementById('btn-new-request').addEventListener('click', () => openModal('new-request'));
+  }
+}
+
+/* =============================================================
+   РЕНДЕР: детальная страница плейсмента
+   ============================================================= */
+
+function placementConfigJson(p) {
+  return {
+    placement_id: p.id,
+    screen: p.screen,
+    owner: p.owner,
+    source: p.source,
+    formation_type: p.formation_type,
+    ranking_type: p.ranking_type,
+    personalization: p.personalization,
+    blender_enabled: p.blender_enabled,
+    fallback_type: p.fallback_type,
+    context_type: p.context_type,
+    limit: p.limit,
+    filters: p.filters || {},
+    status: p.status,
+  };
+}
+
+function syntaxHighlight(json) {
+  // Простая подсветка
+  return json
+    .replace(/"([^"]+)":/g, '<span class="k">"$1"</span>:')
+    .replace(/: (true|false|null)/g, ': <span class="n">$1</span>')
+    .replace(/: (-?\d+(\.\d+)?)/g, ': <span class="n">$1</span>')
+    .replace(/: "([^"]*)"/g, ': <span class="s">"$1"</span>');
+}
+
+function renderDetail() {
+  const p = PLACEMENTS.find(x => x.id === STATE.detailId);
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+  if (!p) {
+    root.appendChild(el(`<div class="empty"><div class="big">🤔</div>Плейсмент не найден</div>`));
+    return;
+  }
+  const editable = canEdit(p);
+
+  // Header card
+  const head = el(`
+    <div class="card">
+      <div class="detail-header">
+        <div style="display: flex; align-items: flex-start; gap: 14px;">
+          <div style="flex:1; min-width:0;">
+            <h2>${escapeHtml(p.title)}</h2>
+            <div class="pid" style="color: var(--text-muted); font-family: ui-monospace, monospace; font-size: 13px; margin-top: 2px;">${p.id}</div>
+            <div class="meta">
+              ${statusChip(p.status)}
+              <span class="chip outline">🖥️ ${escapeHtml(p.screen)}</span>
+              <span class="chip outline">👤 ${escapeHtml(p.owner)}</span>
+              ${sourceChip(p.source)}
+              ${personalizationChip(p.personalization)}
+              ${abChip(p.ab_status)}
+            </div>
+            ${p.description ? `<div class="subtle" style="margin-top:10px;">${escapeHtml(p.description)}</div>` : ''}
+          </div>
+          <div style="display: flex; gap: 8px; flex-shrink: 0;">
+            <button class="btn" id="btn-back">← К списку</button>
+            ${editable
+              ? `<button class="btn btn-primary" onclick="openModal('edit', '${p.id}')">✎ Изменить конфиг</button>`
+              : `<button class="btn" disabled title="Только для владельца плейсмента или админа">🔒 Только чтение</button>`
+            }
+          </div>
+        </div>
+      </div>
+      <div class="tabs" id="tabs">
+        <div class="tab ${STATE.detailTab==='overview'?'active':''}" data-tab="overview">Обзор</div>
+        <div class="tab ${STATE.detailTab==='config'?'active':''}" data-tab="config">Конфигурация</div>
+        <div class="tab ${STATE.detailTab==='analytics'?'active':''}" data-tab="analytics">Аналитика</div>
+        <div class="tab ${STATE.detailTab==='ab'?'active':''}" data-tab="ab">A/B-тесты</div>
+        <div class="tab ${STATE.detailTab==='history'?'active':''}" data-tab="history">История</div>
+      </div>
+      <div class="card-pad" id="tab-body"></div>
+    </div>
+  `);
+  root.appendChild(head);
+  head.querySelector('#btn-back').addEventListener('click', () => navigate('placements'));
+  head.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+    STATE.detailTab = t.dataset.tab;
+    navigate('placements', p.id, STATE.detailTab);
+  }));
+
+  // Tabs
+  const body = head.querySelector('#tab-body');
+  if (STATE.detailTab === 'overview') {
+    body.innerHTML = `
+      <div class="grid-2">
+        <div>
+          <h3 style="margin:0 0 12px; font-size: 15px;">Основные параметры</h3>
+          <dl class="dl">
+            <dt>placement_id</dt><dd><code>${p.id}</code></dd>
+            <dt>Экран</dt><dd>${escapeHtml(p.screen)}</dd>
+            <dt>Владелец</dt><dd>${escapeHtml(p.owner)}</dd>
+            <dt>Источник</dt><dd>${sourceLabel(p.source) || '—'}</dd>
+            <dt>Тип формирования</dt><dd>${p.formation_type}</dd>
+            <dt>Тип ранжирования</dt><dd>${p.ranking_type}</dd>
+            <dt>Контекст</dt><dd>${p.context_type}</dd>
+            <dt>Limit (товаров)</dt><dd>${p.limit || '—'}</dd>
+            <dt>Fallback</dt><dd>${p.fallback_type}</dd>
+            <dt>Персонализация</dt><dd>${p.personalization ? 'да' : 'нет'}</dd>
+            <dt>Blender</dt><dd>${p.blender_enabled ? 'включён' : 'выключен'}</dd>
+            <dt>Фильтры</dt><dd>${p.filters && Object.keys(p.filters).length ? Object.entries(p.filters).map(([k,v])=>`<code>${k}=${v}</code>`).join(' ') : '—'}</dd>
+          </dl>
+        </div>
+        <div>
+          <h3 style="margin:0 0 12px; font-size: 15px;">Состояние сегодня</h3>
+          <div class="grid-2" style="grid-template-columns: 1fr 1fr;">
+            <div class="card kpi" style="border-radius:8px;"><div class="label">RPS</div><div class="value">${p.metrics.rps.toLocaleString('ru-RU')}</div><div class="hint">за последний час</div></div>
+            <div class="card kpi" style="border-radius:8px;"><div class="label">p95 latency</div><div class="value">${p.metrics.p95_ms || '—'} <span style="font-size:14px; color:var(--text-muted);">ms</span></div><div class="hint">источник: Grafana</div></div>
+            <div class="card kpi" style="border-radius:8px;"><div class="label">Error rate</div><div class="value">${p.metrics.error_rate}%</div><div class="hint">за последний час</div></div>
+            <div class="card kpi" style="border-radius:8px;"><div class="label">Последний запрос</div><div class="value" style="font-size:16px;">${p.metrics.last_request}</div><div class="hint">статус: ${p.status==='active'?'жив':'нет трафика'}</div></div>
+          </div>
+
+          <h3 style="margin:18px 0 12px; font-size: 15px;">Бизнес-эффект (последний AB-замер)</h3>
+          <div class="ab-card">
+            ${p.business?.rto ? `<div class="metric"><span>РТО на посетителя</span><b style="color:var(--green);">${p.business.rto}</b></div>` : ''}
+            ${p.business?.margin ? `<div class="metric"><span>Маржа на заказ</span><b style="color:var(--green);">${p.business.margin}</b></div>` : ''}
+            ${p.business?.avg_check ? `<div class="metric"><span>Средний чек</span><b style="color:var(--green);">${p.business.avg_check}</b></div>` : ''}
+            ${p.business?.ctr ? `<div class="metric"><span>CTR</span><b>${p.business.ctr}%</b></div>` : ''}
+            ${!p.business || !Object.keys(p.business).length ? `<div class="subtle">Нет данных AB-теста для этого плейсмента</div>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  else if (STATE.detailTab === 'config') {
+    const json = JSON.stringify(placementConfigJson(p), null, 2);
+    body.innerHTML = `
+      <div class="banner" style="margin-bottom:14px;">
+        <span class="icon">⚙️</span>
+        <div>
+          <div class="title">Placement Config — то, что MS Catalog получает от реестра</div>
+          <div class="desc">МП передаёт запрос с <code>placement_id</code> + контекст → MS Catalog подтягивает этот конфиг → оркестратор выбирает источник и ранжирование.</div>
+        </div>
+      </div>
+      <div class="grid-2" style="grid-template-columns: 1fr 1fr;">
+        <div>
+          <h3 style="margin:0 0 8px; font-size: 14px;">JSON конфигурация</h3>
+          <pre class="code">${syntaxHighlight(escapeHtml(json))}</pre>
+        </div>
+        <div>
+          <h3 style="margin:0 0 8px; font-size: 14px;">Жизненный цикл запроса</h3>
+          <div class="card-pad" style="background:var(--surface-2); border-radius:8px;">
+            <ol style="padding-left:18px; margin:0; line-height:1.9;">
+              <li>МП → POST /catalog/placement <code>{placement_id, context}</code></li>
+              <li>MS Catalog → читает конфиг из реестра по <code>placement_id</code></li>
+              <li>Оркестратор по конфигу выбирает источник: <b>${sourceLabel(p.source)}</b></li>
+              <li>${p.source==='recsys' ? 'Запрос в RecSys (передаём только placement_id + context). Ранжирование внутри RecSys.' : 'Получение списка PLU из источника.'}</li>
+              <li>${p.blender_enabled ? 'Применяется blender (реклама/промо).' : 'Blender выключен — пропускаем шаг.'}</li>
+              <li>Обогащение MS Catalog: цены, остатки, наличие в магазине, обложки.</li>
+              <li>${p.fallback_type !== 'none' && p.fallback_type !== '—' ? `Если пусто/ошибка → fallback: <code>${p.fallback_type}</code>` : 'Fallback не настроен — отдаём пустой ответ.'}</li>
+              <li>Ответ в МП (top-${p.limit || 30} товаров).</li>
+            </ol>
+          </div>
+          <h3 style="margin:14px 0 8px; font-size: 14px;">Зависимости</h3>
+          <div class="stat-line">
+            <span class="item"><b>${sourceLabel(p.source)}</b> · источник</span>
+            <span class="item"><b>MS Catalog</b> · обогащение</span>
+            ${p.fallback_type !== 'none' && p.fallback_type !== '—' ? `<span class="item"><b>${p.fallback_type}</b> · fallback</span>` : ''}
+            ${p.blender_enabled ? `<span class="item"><b>Blender</b></span>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  else if (STATE.detailTab === 'analytics') {
+    // Sparkline data
+    const rps = p.metrics.rps;
+    const sparkData = Array.from({length: 24}, (_, i) => Math.max(0, rps * (0.6 + 0.4 * Math.sin(i / 3) + Math.random() * 0.3)));
+    const sparkPath = sparkData.map((v, i) => `${i * (200/23)},${50 - (v / Math.max(...sparkData)) * 45}`).join(' ');
+    const ctrSpark = Array.from({length: 24}, (_, i) => (p.business?.ctr || 5) * (0.7 + 0.3 * Math.cos(i / 4) + Math.random() * 0.2));
+    const ctrPath = ctrSpark.map((v, i) => `${i * (200/23)},${50 - (v / Math.max(...ctrSpark)) * 45}`).join(' ');
+
+    body.innerHTML = `
+      <div class="banner" style="margin-bottom:14px;">
+        <span class="icon">📊</span>
+        <div>
+          <div class="title">Источники данных аналитики</div>
+          <div class="desc"><b>События МП</b> (поток запросов) · <b>Grafana</b> (latency, errors, RPS) · <b>AB-платформа</b> (статус и результаты) · <b>BI</b> (бизнес-метрики).</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card card-pad">
+          <h3 style="margin:0 0 4px; font-size:14px;">RPS по часам (24ч)</h3>
+          <div class="subtle">Источник: события МП</div>
+          <svg viewBox="0 0 200 50" preserveAspectRatio="none" style="width:100%; height:140px; margin-top:10px;">
+            <polyline fill="rgba(31,111,235,0.12)" stroke="none" points="0,50 ${sparkPath} 200,50"/>
+            <polyline fill="none" stroke="var(--brand)" stroke-width="1.5" points="${sparkPath}"/>
+          </svg>
+          <div class="stat-line" style="margin-top:8px;">
+            <span class="item">Сейчас: <b>${p.metrics.rps.toLocaleString('ru-RU')} RPS</b></span>
+            <span class="item">Пик: <b>${Math.round(Math.max(...sparkData)).toLocaleString('ru-RU')} RPS</b></span>
+            <span class="item">Среднее: <b>${Math.round(sparkData.reduce((a,b)=>a+b,0)/24).toLocaleString('ru-RU')} RPS</b></span>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <h3 style="margin:0 0 4px; font-size:14px;">CTR (24ч)</h3>
+          <div class="subtle">Источник: BI (события tap на товар)</div>
+          <svg viewBox="0 0 200 50" preserveAspectRatio="none" style="width:100%; height:140px; margin-top:10px;">
+            <polyline fill="rgba(21,128,61,0.10)" stroke="none" points="0,50 ${ctrPath} 200,50"/>
+            <polyline fill="none" stroke="var(--green)" stroke-width="1.5" points="${ctrPath}"/>
+          </svg>
+          <div class="stat-line" style="margin-top:8px;">
+            <span class="item">Текущий CTR: <b>${p.business?.ctr || '—'}%</b></span>
+            <span class="item">Бенчмарк по экрану: <b>~ 7%</b></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:14px;">
+        <div class="card card-pad">
+          <h3 style="margin:0 0 10px; font-size:14px;">Производительность (Grafana)</h3>
+          <div class="dl">
+            <dt>p50 latency</dt><dd><b>${Math.round((p.metrics.p95_ms || 0) * 0.55)} ms</b></dd>
+            <dt>p95 latency</dt><dd><b>${p.metrics.p95_ms} ms</b></dd>
+            <dt>p99 latency</dt><dd><b>${Math.round((p.metrics.p95_ms || 0) * 1.4)} ms</b></dd>
+            <dt>Error rate</dt><dd><b>${p.metrics.error_rate}%</b></dd>
+            <dt>Empty-response rate</dt><dd><b>${(Math.random()*2+0.5).toFixed(1)}%</b> <span class="hint-inline">— срабатывает fallback</span></dd>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <h3 style="margin:0 0 10px; font-size:14px;">Покрытие пользователей</h3>
+          <div style="margin-bottom: 12px;">
+            <div class="dl" style="grid-template-columns: 1fr auto;">
+              <dt>Доля персонализированных ответов</dt><dd><b>${p.personalization ? Math.round(70 + Math.random()*25) : 0}%</b></dd>
+            </div>
+            <div class="bar" style="margin-top:6px;"><span style="width:${p.personalization ? Math.round(70 + Math.random()*25) : 0}%"></span></div>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <div class="dl" style="grid-template-columns: 1fr auto;">
+              <dt>Доля fallback-ответов</dt><dd><b>${(Math.random()*4+0.5).toFixed(1)}%</b></dd>
+            </div>
+            <div class="bar" style="margin-top:6px;"><span style="width:${(Math.random()*4+0.5)*5}%; background: var(--yellow);"></span></div>
+          </div>
+          <div>
+            <div class="dl" style="grid-template-columns: 1fr auto;">
+              <dt>Доля показов с CTR > 0</dt><dd><b>${Math.round(40 + Math.random()*30)}%</b></dd>
+            </div>
+            <div class="bar" style="margin-top:6px;"><span style="width:${40 + Math.random()*30}%; background: var(--green);"></span></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  else if (STATE.detailTab === 'ab') {
+    body.innerHTML = `
+      <div class="banner" style="margin-bottom:14px;">
+        <span class="icon">🧪</span>
+        <div>
+          <div class="title">Статус AB-эксперимента — ${abChip(p.ab_status)}</div>
+          <div class="desc">${p.ab_status?.note || (p.ab_status?.phase === 'rolled-out' ? 'Раскатан на 100% пользователей.' : 'Нет активного эксперимента.')}</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card card-pad">
+          <h3 style="margin:0 0 10px; font-size:14px;">Дизайн</h3>
+          <div class="dl">
+            <dt>Контроль</dt><dd>${p.ab_status?.phase==='rolled-out' || p.ab_status?.phase==='in-progress' ? 'Алгоритм / ручная подборка' : '—'}</dd>
+            <dt>Тест</dt><dd>${p.source==='recsys' ? 'RecSys (Bert4Rec + CatBoost)' : 'Новый источник/конфиг'}</dd>
+            <dt>Решение</dt><dd>${p.ab_status?.phase==='rolled-out' ? 'Раскатать на 100%' : (p.ab_status?.phase==='in-progress' ? 'Идёт сбор данных' : '—')}</dd>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <h3 style="margin:0 0 10px; font-size:14px;">Ключевые метрики</h3>
+          <div class="ab-card" style="border: 0; padding: 0;">
+            ${p.ab_status?.delta_margin ? `<div class="metric"><span>Δ Маржа на заказ</span><b style="color:var(--green);">${p.ab_status.delta_margin}</b></div>` : ''}
+            ${p.ab_status?.delta_items ? `<div class="metric"><span>Δ Товаров в заказе</span><b style="color:var(--green);">${p.ab_status.delta_items}</b></div>` : ''}
+            ${p.ab_status?.delta_avg_check ? `<div class="metric"><span>Δ Средний чек</span><b style="color:var(--green);">${p.ab_status.delta_avg_check}</b></div>` : ''}
+            ${!p.ab_status?.delta_margin && !p.ab_status?.delta_items && !p.ab_status?.delta_avg_check ? `<div class="subtle">Нет данных по эксперименту</div>` : ''}
+          </div>
+        </div>
+      </div>
+      <div class="card card-pad" style="margin-top:14px;">
+        <h3 style="margin:0 0 10px; font-size:14px;">История экспериментов</h3>
+        <table class="reg" style="margin: -8px -8px -8px;">
+          <thead><tr><th>Период</th><th>Гипотеза</th><th>Результат</th><th>Решение</th></tr></thead>
+          <tbody>
+            <tr><td>Q2 2026</td><td>RecSys vs алгоритм</td><td><span class="chip green">${p.ab_status?.delta_margin || '+0,3%'}</span></td><td>Раскатано 100%</td></tr>
+            <tr><td>Q1 2026</td><td>Б1 vs алгоритм</td><td><span class="chip yellow">слабый эффект</span></td><td>Отказ от Б1</td></tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+  else if (STATE.detailTab === 'history') {
+    const items = [
+      { ts: '2026-05-19 09:51', actor: ROLES[STATE.role].name, type: 'edit', desc: 'Изменён лимит товаров с 25 на 30.' },
+      { ts: '2026-05-12 14:22', actor: 'Админ реестра', type: 'rollout', desc: `AB-тест ${p.ab_status?.phase==='rolled-out' ? 'закрыт, раскатано 100%' : 'переведён в активный'}.` },
+      { ts: '2026-04-30 11:00', actor: 'Админ реестра', type: 'create', desc: 'Плейсмент создан.' },
+    ];
+    body.innerHTML = `
+      <div class="feed">
+        ${items.map(it => `
+          <div class="feed-item">
+            <div class="feed-dot ${it.type==='edit'?'yellow':(it.type==='rollout'?'green':'')}">${{edit:'✎', rollout:'🚀', create:'＋'}[it.type] || '•'}</div>
+            <div class="feed-body">
+              <div><span class="actor">${escapeHtml(it.actor)}</span> <span class="ts">· ${it.ts}</span></div>
+              <div class="desc">${escapeHtml(it.desc)}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+}
+
+/* =============================================================
+   РЕНДЕР: карта по экранам
+   ============================================================= */
+
+function renderMap() {
+  const root = document.getElementById('content');
+  const visible = visiblePlacements();
+  const byScreen = {};
+  visible.forEach(p => { (byScreen[p.screen] = byScreen[p.screen] || []).push(p); });
+  // Включим inactive_slots в визуализацию
+  const screenIcons = {
+    'Главная': '🏠', 'Каталог': '📚', 'Поиск': '🔍', 'Карточка товара': '🛒',
+    'Корзина': '🧺', 'Чекаут': '💳', 'Профиль': '👤', 'Листинг': '📑',
+    'Любимые категории': '⭐', 'Спасибо за заказ': '✅',
+  };
+
+  // Собираем все экраны (включая те, где только неактив. точки)
+  const allScreens = new Set([...Object.keys(byScreen), ...INACTIVE_SLOTS.map(s => s.screen)]);
+  const sortedScreens = [...allScreens].sort();
+
+  root.innerHTML = '';
+  root.appendChild(el(`
+    <div class="stack">
+      <div>
+        <h2 class="h2">Карта плейсментов по экранам МП</h2>
+        <div class="subtle">Визуальное представление всех товарных полок и слотов. Жёлтым отмечены черновики, пунктиром — неактивированные точки размещения.</div>
+      </div>
+      <div class="map-grid" id="map-grid"></div>
+    </div>
+  `));
+
+  const grid = document.getElementById('map-grid');
+  sortedScreens.forEach(screen => {
+    const items = byScreen[screen] || [];
+    const slots = INACTIVE_SLOTS.filter(s => s.screen === screen);
+    const card = el(`
+      <div class="screen-card">
+        <div class="screen-head">
+          <div class="icon">${screenIcons[screen] || '📱'}</div>
+          <div class="title">${escapeHtml(screen)}</div>
+          <div class="count">${items.length} ${items.length === 1 ? 'полка' : 'полок'}${slots.length ? ` · +${slots.length} слот` : ''}</div>
+        </div>
+        <div class="screen-body">
+          ${items.map(p => `
+            <div class="placement-row ${p.status==='draft'?'draft':''}" data-id="${p.id}" title="${escapeHtml(p.title)}">
+              ${sourceChip(p.source)}
+              <span class="name">${escapeHtml(p.title.replace(/^[^·]+·\s*/, ''))}</span>
+              ${p.personalization ? '<span title="Персонализирован">🎯</span>' : ''}
+            </div>
+          `).join('')}
+          ${slots.map(s => `
+            <div class="placement-row inactive" data-slot="${s.id}" title="${escapeHtml(s.reason)}">
+              <span class="chip outline">⬚ слот</span>
+              <span class="name">${escapeHtml(s.name)}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `);
+    grid.appendChild(card);
+    card.querySelectorAll('.placement-row[data-id]').forEach(r => {
+      r.addEventListener('click', () => navigate('placements', r.dataset.id));
+    });
+    card.querySelectorAll('.placement-row[data-slot]').forEach(r => {
+      r.addEventListener('click', () => navigate('inactive'));
+    });
+  });
+}
+
+/* =============================================================
+   РЕНДЕР: неактивированные точки
+   ============================================================= */
+
+function renderInactive() {
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+  root.appendChild(el(`
+    <div class="stack">
+      <div>
+        <h2 class="h2">Неактивированные точки размещения</h2>
+        <div class="subtle">Потенциальные слоты в МП, не занятые товарной подборкой. Видны всем владельцам — можно подать заявку на использование.</div>
+      </div>
+      <div class="banner">
+        <span class="icon">💡</span>
+        <div>
+          <div class="title">Зачем это нужно</div>
+          <div class="desc">Это управляемый запас «куда можно положить полку». Стейкхолдеры (Media, Trade-Promo, Лояльность) могут <b>занять</b> точку, подав заявку. Аналог Smart Group placeholders в Algolia Merchandising Studio.</div>
+        </div>
+      </div>
+      <div class="grid-2" id="slots"></div>
+    </div>
+  `));
+
+  const wrap = document.getElementById('slots');
+  INACTIVE_SLOTS.forEach(s => {
+    const e = el(`
+      <div class="empty-slot">
+        <div style="display:flex; align-items: center; gap: 8px;">
+          <span class="chip outline">⬚ потенциальный слот</span>
+          <span class="chip">${escapeHtml(s.screen)}</span>
+        </div>
+        <div style="font-weight: 600; font-size: 14px;">${escapeHtml(s.name)}</div>
+        <div class="reason">${escapeHtml(s.reason)}</div>
+        <div class="stat-line" style="margin-top:4px;">
+          <span class="item">📊 <b>${escapeHtml(s.estimated_traffic)}</b></span>
+          <span class="item">Рекомендуемые владельцы: ${s.suggested_owners.map(o=>`<span class="chip">${escapeHtml(o)}</span>`).join(' ')}</span>
+        </div>
+        <div style="display:flex; gap: 8px; margin-top: 8px;">
+          ${STATE.role !== 'admin'
+            ? `<button class="btn btn-primary btn-sm" data-claim="${s.id}">📥 Занять эту точку</button>`
+            : `<button class="btn btn-sm" disabled>Доступно стейкхолдерам</button>`
+          }
+          <button class="btn btn-ghost btn-sm">Запросить мониторинг</button>
+        </div>
+      </div>
+    `);
+    wrap.appendChild(e);
+    e.querySelectorAll('[data-claim]').forEach(b => b.addEventListener('click', () => openModal('claim-slot', b.dataset.claim)));
+  });
+}
+
+/* =============================================================
+   РЕНДЕР: заявки
+   ============================================================= */
+
+function renderRequests() {
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+  const visible = REQUESTS.filter(r => STATE.role === 'admin' || r.placement_owner_proposed === ROLES[STATE.role].filterOwner);
+  root.appendChild(el(`
+    <div class="stack">
+      <div>
+        <h2 class="h2">Заявки на регистрацию и изменения</h2>
+        <div class="subtle">Discovery-агент создаёт заявки автоматически при обнаружении новых placement_id. Стейкхолдеры подают заявки вручную.</div>
+      </div>
+      <div class="card">
+        <table class="reg">
+          <thead><tr><th>ID</th><th>Тип</th><th>Описание</th><th>Заявитель</th><th>Дата</th><th>Статус</th><th></th></tr></thead>
+          <tbody>
+            ${visible.map(r => `
+              <tr>
+                <td><code class="pid">${r.id}</code></td>
+                <td><span class="chip ${r.type==='auto-discovery'?'yellow':(r.type==='slot-claim'?'purple':'blue')}">${{
+                  'auto-discovery':'🤖 авто',
+                  'manual':'📝 ручная',
+                  'change':'✎ изменение',
+                  'slot-claim':'⬚ занять слот',
+                }[r.type]}</span></td>
+                <td><div style="font-weight:500;">${escapeHtml(r.title)}</div><div class="subtle">${escapeHtml(r.description)}</div></td>
+                <td>${escapeHtml(r.requester)}</td>
+                <td>${escapeHtml(r.created_at)}</td>
+                <td>${{
+                  'pending':'<span class="chip yellow">ожидает</span>',
+                  'in-review':'<span class="chip blue">на проверке</span>',
+                  'approved':'<span class="chip green">одобрено</span>',
+                  'rejected':'<span class="chip red">отклонено</span>',
+                }[r.status]}</td>
+                <td>${STATE.role==='admin' && (r.status==='pending' || r.status==='in-review')
+                  ? `<button class="btn btn-sm btn-primary">Одобрить</button>`
+                  : '—'
+                }</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `));
+}
+
+/* =============================================================
+   РЕНДЕР: обзор
+   ============================================================= */
+
+function renderOverview() {
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+  const visible = PLACEMENTS;
+  // Распределение по источникам
+  const bySource = {};
+  visible.forEach(p => { bySource[p.source] = (bySource[p.source]||0) + 1; });
+  const byOwner = {};
+  visible.forEach(p => { byOwner[p.owner] = (byOwner[p.owner]||0) + 1; });
+  const byScreen = {};
+  visible.forEach(p => { byScreen[p.screen] = (byScreen[p.screen]||0) + 1; });
+
+  const total = visible.length;
+  const personalized = visible.filter(p=>p.personalization).length;
+  const rolledOut = visible.filter(p=>p.ab_status?.phase==='rolled-out').length;
+  const activeAB = visible.filter(p=>p.ab_status?.phase==='in-progress').length;
+
+  root.appendChild(el(`
+    <div class="stack">
+      <div>
+        <h2 class="h2">Обзор реестра</h2>
+        <div class="subtle">Дата: ${todayLabel()} · Общая статистика по всем плейсментам МП ТС5.</div>
+      </div>
+
+      <div class="grid-4">
+        <div class="card kpi"><div class="label">Всего плейсментов</div><div class="value">${total}</div><div class="hint">${visible.filter(p=>p.status==='active').length} активных</div></div>
+        <div class="card kpi"><div class="label">Персонализированы</div><div class="value">${Math.round(personalized/total*100)}%</div><div class="hint">${personalized} из ${total}</div></div>
+        <div class="card kpi"><div class="label">Раскатано 100%</div><div class="value">${rolledOut}</div><div class="hint">плейсменты с раскатанным AB</div></div>
+        <div class="card kpi"><div class="label">Активных AB</div><div class="value">${activeAB}</div><div class="hint">идёт сбор данных</div></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card card-pad">
+          <h3 style="margin:0 0 12px; font-size:14px;">Распределение по источникам</h3>
+          ${Object.entries(bySource).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+            <div style="margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; font-size:13px;">
+                <span>${sourceLabel(k)}</span><b>${v} (${Math.round(v/total*100)}%)</b>
+              </div>
+              <div class="bar" style="margin-top:4px;"><span style="width:${v/total*100}%"></span></div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="card card-pad">
+          <h3 style="margin:0 0 12px; font-size:14px;">Распределение по владельцам</h3>
+          ${Object.entries(byOwner).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+            <div style="margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; font-size:13px;">
+                <span>${escapeHtml(k)}</span><b>${v} (${Math.round(v/total*100)}%)</b>
+              </div>
+              <div class="bar" style="margin-top:4px;"><span style="width:${v/total*100}%; background: var(--purple);"></span></div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="card card-pad">
+        <h3 style="margin:0 0 12px; font-size:14px;">Концентрация плейсментов по экранам</h3>
+        <div class="grid-3">
+          ${Object.entries(byScreen).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+            <div class="card-pad" style="border: 1px solid var(--border); border-radius: 8px;">
+              <div class="subtle" style="margin-bottom:2px;">${escapeHtml(k)}</div>
+              <div style="font-size:22px; font-weight:600;">${v}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="banner">
+        <span class="icon">🎯</span>
+        <div>
+          <div class="title">Точки роста по реестру</div>
+          <div class="desc">
+            <b>${total - personalized} плейсментов</b> не персонализированы — потенциал для подключения RecSys.
+            <b>${INACTIVE_SLOTS.length} неактивированных слотов</b> ждут владельца.
+            <b>${REQUESTS.filter(r=>r.status==='pending' || r.status==='in-review').length} заявок</b> в очереди.
+          </div>
+        </div>
+      </div>
+    </div>
+  `));
+}
+
+/* =============================================================
+   РЕНДЕР: аудит
+   ============================================================= */
+
+function renderAudit() {
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+  const iconMap = { approve:'✓', edit:'✎', discover:'🤖', archive:'📦', request:'📥', rollout:'🚀', create:'＋' };
+  const classMap = { approve:'green', discover:'yellow', rollout:'green', edit:'', archive:'yellow', request:'', create:'green' };
+  root.appendChild(el(`
+    <div class="stack">
+      <div>
+        <h2 class="h2">Аудит изменений</h2>
+        <div class="subtle">Полный лог действий по реестру. Аналог audit log в LaunchDarkly — каждое изменение конфига, статуса или владельца.</div>
+      </div>
+      <div class="card card-pad">
+        <div class="feed">
+          ${AUDIT.map(a => `
+            <div class="feed-item">
+              <div class="feed-dot ${classMap[a.action]||''}">${iconMap[a.action]||'•'}</div>
+              <div class="feed-body">
+                <div><span class="actor">${escapeHtml(a.actor)}</span> <span class="ts">· ${a.ts}</span></div>
+                <div class="desc">${escapeHtml(a.desc)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `));
+}
+
+/* =============================================================
+   РЕНДЕР: ролевая модель
+   ============================================================= */
+
+function renderRoles() {
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+  const features = [
+    ['Просмотр реестра',           'read', 'read',  'read',  'read'],
+    ['Редактировать свой конфиг',  'write','write', 'write', 'write'],
+    ['Редактировать чужой конфиг', 'write','none',  'none',  'none'],
+    ['Менять владельца',           'write','none',  'none',  'none'],
+    ['Архивировать плейсмент',     'write','none',  'none',  'none'],
+    ['Одобрить заявку',            'write','none',  'none',  'none'],
+    ['Подать заявку',              'write','write', 'write', 'write'],
+    ['Занять неактив. точку',      'write','write', 'write', 'write'],
+    ['Подключить blender',         'write','none',  'none',  'none'],
+    ['Переключить ranking_type',   'write','write*','write*','write*'],
+    ['Аудит лог',                  'read', 'read',  'read',  'read'],
+    ['API ключи стейкхолдеров',    'write','read',  'read',  'read'],
+  ];
+  const persMap = { write: ['write','полный'], read: ['read','чтение'], none: ['none','нет'] };
+
+  root.appendChild(el(`
+    <div class="stack">
+      <div>
+        <h2 class="h2">Ролевая модель</h2>
+        <div class="subtle">Четыре роли. Стейкхолдеры видят только свои плейсменты. Админ — полный контроль и арбитраж.</div>
+      </div>
+      <div class="card card-pad">
+        <table class="perm-table">
+          <thead>
+            <tr><th style="width: 32%;">Функция</th><th>Админ (Каталог)</th><th>X5 Media</th><th>Trade-Promo</th><th>Лояльность</th></tr>
+          </thead>
+          <tbody>
+            ${features.map(([f,a,m,t,l])=>`
+              <tr>
+                <td><b>${escapeHtml(f)}</b></td>
+                ${[a,m,t,l].map(v=>{
+                  const star = v.endsWith('*');
+                  const key = v.replace('*','');
+                  const [cls,lbl] = persMap[key];
+                  return `<td><span class="perm-chip ${cls}">${lbl}${star?' *':''}</span></td>`;
+                }).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div class="subtle" style="margin-top: 10px;">* — переключение <code>ranking_type</code> требует согласования с командой RecSys (создаётся заявка типа <i>change</i>).</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card card-pad">
+          <h3 style="margin:0 0 10px; font-size:14px;">Discovery-агент (auto-registration)</h3>
+          <div class="lifecycle" style="flex-wrap:wrap;">
+            <span class="step done">①  Запрос из МП с unknown placement_id</span>
+            <span class="arrow">→</span>
+            <span class="step done">②  Discovery-агент создаёт REQ-***</span>
+            <span class="arrow">→</span>
+            <span class="step active">③  Заявка в очереди</span>
+            <span class="arrow">→</span>
+            <span class="step">④  Админ одобряет / назначает владельца</span>
+            <span class="arrow">→</span>
+            <span class="step">⑤  Плейсмент → active</span>
+          </div>
+          <div class="subtle" style="margin-top:10px;">Гарантирует: ни один новый плейсмент не появится в МП незаметно. Аналог Smart Group placeholders в Algolia.</div>
+        </div>
+        <div class="card card-pad">
+          <h3 style="margin:0 0 10px; font-size:14px;">Источники данных реестра</h3>
+          <div class="dl">
+            <dt>Структура / метаданные</dt><dd>Placement Registry (этот сервис)</dd>
+            <dt>Трафик / RPS / latency</dt><dd>Grafana через Prometheus</dd>
+            <dt>Бизнес-метрики</dt><dd>BI (через DWH-проекции)</dd>
+            <dt>AB-эксперименты</dt><dd>AB-платформа X5</dd>
+            <dt>Discovery-агент</dt><dd>Лог-парсер событий МП</dd>
+            <dt>API-инвентарь</dt><dd>OpenAPI MS Catalog</dd>
+          </div>
+        </div>
+      </div>
+    </div>
+  `));
+}
+
+/* =============================================================
+   РЕНДЕР: API контракт
+   ============================================================= */
+
+function renderApi() {
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+
+  const apiJson = `{
+  "placement_id": "home.recsys.foryou",
+  "context": {
+    "x5id": "uuid",
+    "product_id": null,
+    "category_id": null,
+    "cart": [],
+    "store_id": "12345",
+    "session_id": "uuid"
+  }
+}`;
+  const respJson = `{
+  "placement_id": "home.recsys.foryou",
+  "config_version": "v17",
+  "source": "recsys",
+  "is_personalized": true,
+  "is_fallback": false,
+  "items": [
+    { "plu": "1234567", "score": 0.94, "reason": "history" },
+    { "plu": "9876543", "score": 0.88, "reason": "complement" }
+  ],
+  "trace": {
+    "took_ms": 178,
+    "blender_applied": false,
+    "ranker": "RecSys"
+  }
+}`;
+
+  root.appendChild(el(`
+    <div class="stack">
+      <div>
+        <h2 class="h2">API контракт реестра</h2>
+        <div class="subtle">Контракт между МП ↔ MS Catalog ↔ Placement Registry ↔ RecSys / источники.</div>
+      </div>
+
+      <div class="banner">
+        <span class="icon">📦</span>
+        <div>
+          <div class="title">Принцип «placement_id + context»</div>
+          <div class="desc">МП передаёт только <code>placement_id</code> и контекст. Никаких параметров модели ранжирования. Это устраняет нецелевое использование RecSys.</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <h3 style="margin:0 0 8px; font-size:14px;">POST /catalog/placement → запрос из МП</h3>
+          <pre class="code">${syntaxHighlight(escapeHtml(apiJson))}</pre>
+        </div>
+        <div>
+          <h3 style="margin:0 0 8px; font-size:14px;">Ответ MS Catalog (обогащённый)</h3>
+          <pre class="code">${syntaxHighlight(escapeHtml(respJson))}</pre>
+        </div>
+      </div>
+
+      <div class="card card-pad">
+        <h3 style="margin:0 0 12px; font-size:14px;">Контракт реестра: GET /registry/placements/{placement_id}</h3>
+        <pre class="code">${syntaxHighlight(escapeHtml(JSON.stringify(placementConfigJson(PLACEMENTS[0]), null, 2)))}</pre>
+      </div>
+
+      <div class="card card-pad">
+        <h3 style="margin:0 0 12px; font-size:14px;">Эндпоинты прототипа (концепт)</h3>
+        <table class="reg">
+          <thead><tr><th>Метод</th><th>Эндпоинт</th><th>Назначение</th><th>Роли</th></tr></thead>
+          <tbody>
+            <tr><td><span class="chip green">GET</span></td><td><code>/registry/placements</code></td><td>Список плейсментов с фильтрами</td><td>all</td></tr>
+            <tr><td><span class="chip green">GET</span></td><td><code>/registry/placements/{id}</code></td><td>Получить конфиг (для MS Catalog)</td><td>service-to-service</td></tr>
+            <tr><td><span class="chip yellow">PATCH</span></td><td><code>/registry/placements/{id}</code></td><td>Изменить конфиг (источник, fallback, blender, фильтры)</td><td>owner, admin</td></tr>
+            <tr><td><span class="chip blue">POST</span></td><td><code>/registry/placements</code></td><td>Создать плейсмент (черновик)</td><td>admin</td></tr>
+            <tr><td><span class="chip yellow">PATCH</span></td><td><code>/registry/placements/{id}/owner</code></td><td>Сменить владельца</td><td>admin</td></tr>
+            <tr><td><span class="chip yellow">POST</span></td><td><code>/registry/placements/{id}/archive</code></td><td>Архивировать</td><td>admin</td></tr>
+            <tr><td><span class="chip blue">POST</span></td><td><code>/registry/requests</code></td><td>Подать заявку (manual / slot-claim / change)</td><td>owner</td></tr>
+            <tr><td><span class="chip blue">POST</span></td><td><code>/registry/discovery</code></td><td>Discovery-агент регистрирует unknown placement_id</td><td>system</td></tr>
+            <tr><td><span class="chip green">GET</span></td><td><code>/registry/slots</code></td><td>Неактивированные точки</td><td>all</td></tr>
+            <tr><td><span class="chip green">GET</span></td><td><code>/registry/audit</code></td><td>Лог изменений</td><td>all</td></tr>
+            <tr><td><span class="chip green">GET</span></td><td><code>/registry/placements/{id}/metrics</code></td><td>Прокси к Grafana/BI/AB</td><td>all</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `));
+}
+
+/* =============================================================
+   МОДАЛКИ
+   ============================================================= */
+
+function openModal(kind, payload=null) {
+  const bg = document.getElementById('modal-bg');
+  const title = document.getElementById('modal-title');
+  const sub = document.getElementById('modal-subtitle');
+  const body = document.getElementById('modal-body');
+  const ok = document.getElementById('modal-ok');
+
+  if (kind === 'edit') {
+    const p = PLACEMENTS.find(x => x.id === payload);
+    title.textContent = `Редактировать конфигурацию`;
+    sub.textContent = `${p.title} · ${p.id}`;
+    body.innerHTML = `
+      <div class="form-row"><label>Источник (source)</label>
+        <select>${SOURCES.map(s => `<option ${p.source===s?'selected':''}>${s}</option>`).join('')}</select>
+      </div>
+      <div class="form-row"><label>Тип ранжирования (ranking_type)</label>
+        <select>${RANKING.map(r => `<option ${p.ranking_type===r?'selected':''}>${r}</option>`).join('')}</select>
+      </div>
+      <div class="form-row"><label>Контекст (context_type)</label>
+        <select>${CONTEXTS.map(c => `<option ${p.context_type===c?'selected':''}>${c}</option>`).join('')}</select>
+      </div>
+      <div class="form-row"><label>Fallback</label>
+        <input type="text" value="${escapeHtml(p.fallback_type)}">
+      </div>
+      <div class="form-row"><label>Limit (товаров)</label>
+        <input type="number" value="${p.limit}">
+      </div>
+      <div class="form-row"><label><input type="checkbox" ${p.personalization?'checked':''}> Персонализация</label></div>
+      <div class="form-row"><label><input type="checkbox" ${p.blender_enabled?'checked':''}> Включить blender (требует согласования с RecSys)</label></div>
+      <div class="banner" style="margin-top: 6px;">
+        <span class="icon">⚠️</span>
+        <div class="desc"><b>Это прототип.</b> Сохранение работает только в рамках сессии и не пишется на бэкенд.</div>
+      </div>
+    `;
+    ok.textContent = 'Сохранить (демо)';
+  }
+  else if (kind === 'new-placement') {
+    title.textContent = 'Новый плейсмент';
+    sub.textContent = 'Создание записи в реестре';
+    body.innerHTML = `
+      <div class="form-row"><label>placement_id</label><input type="text" placeholder="например, home.media.summer"></div>
+      <div class="form-row"><label>Название</label><input type="text" placeholder="Главная · Летняя витрина"></div>
+      <div class="form-row"><label>Экран</label><input type="text" placeholder="Главная"></div>
+      <div class="form-row"><label>Владелец</label>
+        <select>${OWNERS.map(o => `<option>${o}</option>`).join('')}</select>
+      </div>
+      <div class="form-row"><label>Источник</label>
+        <select>${SOURCES.map(s => `<option>${s}</option>`).join('')}</select>
+      </div>
+    `;
+    ok.textContent = 'Создать (демо)';
+  }
+  else if (kind === 'new-request') {
+    title.textContent = 'Заявка на плейсмент';
+    sub.textContent = `От имени: ${ROLES[STATE.role].team}`;
+    body.innerHTML = `
+      <div class="form-row"><label>Тип заявки</label>
+        <select>
+          <option>Новый плейсмент</option>
+          <option>Изменение конфига</option>
+          <option>Занять неактивированный слот</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Краткое описание</label><textarea rows="3" placeholder="Что хотите завести / изменить"></textarea></div>
+      <div class="form-row"><label>Где разместится</label><input type="text" placeholder="Экран / точка"></div>
+    `;
+    ok.textContent = 'Отправить заявку';
+  }
+  else if (kind === 'claim-slot') {
+    const slot = INACTIVE_SLOTS.find(s => s.id === payload);
+    title.textContent = 'Занять неактивированную точку';
+    sub.textContent = slot.name;
+    body.innerHTML = `
+      <div class="banner" style="margin-bottom: 12px;">
+        <span class="icon">⬚</span>
+        <div>
+          <div class="title">${escapeHtml(slot.name)}</div>
+          <div class="desc">${escapeHtml(slot.reason)}</div>
+        </div>
+      </div>
+      <div class="form-row"><label>Команда-владелец</label>
+        <select>${slot.suggested_owners.map(o=>`<option ${o===ROLES[STATE.role].filterOwner?'selected':''}>${o}</option>`).join('')}</select>
+      </div>
+      <div class="form-row"><label>Тип формирования</label>
+        <select>${TYPES.map(t => `<option>${t}</option>`).join('')}</select>
+      </div>
+      <div class="form-row"><label>Источник (предварительно)</label>
+        <select>${SOURCES.map(s => `<option>${s}</option>`).join('')}</select>
+      </div>
+      <div class="form-row"><label>Обоснование</label><textarea rows="3" placeholder="Зачем нужен этот плейсмент"></textarea></div>
+    `;
+    ok.textContent = 'Подать заявку';
+  }
+  bg.classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal-bg').classList.remove('show');
+}
+document.getElementById('modal-bg').addEventListener('click', e => {
+  if (e.target.id === 'modal-bg') closeModal();
+});
+
+window.openModal = openModal;
+window.closeModal = closeModal;
+
+/* =============================================================
+   ОБЩИЙ РЕНДЕР
+   ============================================================= */
+function render() {
+  // Бейджи в сайдбаре
+  document.getElementById('nav-count-placements').textContent = visiblePlacements().length;
+  document.getElementById('nav-count-inactive').textContent = INACTIVE_SLOTS.length;
+  const reqVisible = REQUESTS.filter(r => STATE.role === 'admin' || r.placement_owner_proposed === ROLES[STATE.role].filterOwner);
+  document.getElementById('nav-count-requests').textContent = reqVisible.filter(r => r.status==='pending'||r.status==='in-review').length;
+
+  if (STATE.detailId) { renderDetail(); return; }
+  switch (STATE.route) {
+    case 'placements': renderPlacementsList(); break;
+    case 'map': renderMap(); break;
+    case 'inactive': renderInactive(); break;
+    case 'requests': renderRequests(); break;
+    case 'overview': renderOverview(); break;
+    case 'audit': renderAudit(); break;
+    case 'roles': renderRoles(); break;
+    case 'api': renderApi(); break;
+    default: renderPlacementsList();
+  }
+}
+
+// Init
+render();
+</script>
+</body>
+</html>
