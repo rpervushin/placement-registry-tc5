@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Placement Registry v0.3 — Медиа-правила — МП ТС5</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #fafbfc;
+    --border: #e4e7ec;
+    --border-strong: #d0d5dd;
+    --text: #101828;
+    --text-muted: #475467;
+    --text-dim: #98a2b3;
+    --brand: #5FAF2D;
+    --brand-soft: #E8F5DC;
+    --brand-dark: #1F4A22;
+    --brand-darker: #14361A;
+    --green: #15803d;
+    --green-soft: #dcfce7;
+    --yellow: #b45309;
+    --yellow-soft: #fef3c7;
+    --red: #b42318;
+    --red-soft: #fee4e2;
+    --purple: #6941c6;
+    --purple-soft: #f4ebff;
+    --orange: #c4450a;
+    --orange-soft: #fff1e6;
+    --media: #1d4ed8;
+    --media-soft: #eff6ff;
+    --gray-soft: #f2f4f7;
+    --shadow-sm: 0 1px 2px rgba(16,24,40,0.06);
+    --shadow-md: 0 4px 12px rgba(16,24,40,0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .sidebar { background: #14361A; color: #e6f4dc; padding: 20px 14px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+  .brand-logo { flex: 0 0 auto; width: 40px; height: 40px; background: #000; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 2px; letter-spacing: -0.01em; }
+  .logo-sub { font-size: 11px; color: #a8c79a; }
+  .nav-section { font-size: 11px; text-transform: uppercase; color: #7fa570; letter-spacing: 0.06em; margin: 18px 8px 6px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; color: #d5e8c5; font-size: 13.5px; user-select: none; }
+  .nav-item:hover { background: #1F4A22; color: #fff; }
+  .nav-item.active { background: #5FAF2D; color: #fff; }
+  .nav-item .badge { margin-left: auto; background: #1F4A22; color: #d5e8c5; font-size: 11px; padding: 1px 7px; border-radius: 10px; }
+  .nav-item.active .badge { background: rgba(255,255,255,0.25); color: #fff; }
+  .nav-item.media-nav { border-left: 2px solid #3b82f6; }
+  .nav-item.media-nav.active { background: #1d4ed8; border-left-color: #60a5fa; }
+  .mvp-badge { margin: 10px 0 0; padding: 10px 12px; background: #1d3a6e; border-radius: 8px; font-size: 12px; color: #93c5fd; border-left: 3px solid #3b82f6; }
+  .mvp-badge .mvp-title { color: #fff; font-weight: 600; margin-bottom: 4px; font-size: 12.5px; }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 28px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 10; }
+  .topbar h1 { margin: 0; font-size: 16px; font-weight: 600; }
+  .topbar .breadcrumb { color: var(--text-muted); font-size: 13px; }
+  .topbar .breadcrumb a { color: var(--brand); cursor: pointer; text-decoration: none; }
+  .topbar .spacer { flex: 1; }
+  .role-switch { display: flex; align-items: center; gap: 6px; background: var(--gray-soft); border-radius: 8px; padding: 4px; }
+  .role-switch button { background: transparent; border: 0; padding: 5px 12px; border-radius: 6px; font-size: 12.5px; cursor: pointer; color: var(--text-muted); }
+  .role-switch button.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); font-weight: 500; }
+  .user-pill { display: flex; align-items: center; gap: 8px; background: var(--gray-soft); border-radius: 999px; padding: 4px 12px 4px 4px; font-size: 13px; }
+  .user-pill .avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--brand); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+  .user-pill .meta { display: flex; flex-direction: column; line-height: 1.1; }
+  .user-pill .meta small { color: var(--text-dim); font-size: 11px; }
+  .content { padding: 24px 28px; max-width: 1500px; width: 100%; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-sm); }
+  .card-pad { padding: 18px 20px; }
+  .stack { display: grid; gap: 16px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .h2 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .subtle { color: var(--text-muted); font-size: 13px; }
+  .kpi { padding: 14px 16px; }
+  .kpi .label { color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .kpi .value { font-size: 26px; font-weight: 600; line-height: 1.1; margin-top: 4px; letter-spacing: -0.01em; }
+  .kpi .hint { color: var(--text-dim); font-size: 12px; margin-top: 4px; }
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 14px 18px; border-bottom: 1px solid var(--border); background: var(--surface-2); border-radius: 10px 10px 0 0; }
+  .toolbar input[type="text"], .toolbar select { border: 1px solid var(--border-strong); background: var(--surface); padding: 7px 10px; border-radius: 7px; font-size: 13px; min-width: 0; outline: none; color: var(--text); }
+  .toolbar input[type="text"] { min-width: 260px; }
+  .toolbar input[type="text"]:focus, .toolbar select:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+  .toolbar .right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .btn { border: 1px solid var(--border-strong); background: var(--surface); padding: 7px 14px; border-radius: 7px; font-size: 13px; cursor: pointer; font-weight: 500; color: var(--text); }
+  .btn:hover { background: var(--gray-soft); }
+  .btn-primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .btn-primary:hover { background: var(--brand-dark); }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--brand); }
+  .btn-ghost:hover { background: var(--brand-soft); }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  table.reg { width: 100%; border-collapse: collapse; }
+  table.reg th { text-align: left; background: var(--surface-2); border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; padding: 10px 14px; }
+  table.reg td { border-bottom: 1px solid var(--border); padding: 12px 14px; vertical-align: middle; font-size: 13.5px; }
+  table.reg tbody tr { cursor: pointer; }
+  table.reg tbody tr:hover { background: var(--surface-2); }
+  table.reg td .pid { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--text-muted); }
+  table.reg td .title { font-weight: 500; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 12px; font-size: 12px; line-height: 1.6; background: var(--gray-soft); color: var(--text-muted); white-space: nowrap; }
+  .chip.green { background: var(--green-soft); color: var(--green); }
+  .chip.yellow { background: var(--yellow-soft); color: var(--yellow); }
+  .chip.red { background: var(--red-soft); color: var(--red); }
+  .chip.blue { background: var(--brand-soft); color: var(--brand); }
+  .chip.purple { background: var(--purple-soft); color: var(--purple); }
+  .chip.media { background: var(--media-soft); color: var(--media); font-weight: 600; }
+  .chip.outline { background: transparent; border: 1px dashed var(--border-strong); color: var(--text-muted); }
+  .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .detail-header { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+  .detail-header h2 { margin: 0; font-size: 20px; }
+  .detail-header .meta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 20px; background: var(--surface); gap: 4px; }
+  .tab { padding: 11px 14px; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; font-size: 13.5px; font-weight: 500; user-select: none; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+  .tab.tab-media.active { color: var(--media); border-bottom-color: var(--media); }
+  .dl { display: grid; grid-template-columns: 200px 1fr; gap: 10px 16px; }
+  .dl dt { color: var(--text-muted); font-size: 13px; }
+  .dl dd { margin: 0; font-size: 13.5px; }
+  .dl dd code { background: var(--gray-soft); padding: 1px 6px; border-radius: 4px; font-size: 12.5px; }
+  pre.code { background: #0f1729; color: #d1d5db; border-radius: 8px; padding: 16px 18px; overflow: auto; font-size: 12.5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; line-height: 1.55; }
+  pre.code .k { color: #93c5fd; }
+  pre.code .s { color: #fcd34d; }
+  pre.code .n { color: #c4b5fd; }
+  pre.code .c { color: #6b7280; font-style: italic; }
+  .map-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .screen-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+  .screen-head { padding: 12px 14px; border-bottom: 1px solid var(--border); background: var(--surface-2); display: flex; align-items: center; gap: 8px; }
+  .screen-head .icon { width: 28px; height: 28px; border-radius: 6px; background: var(--brand-soft); color: var(--brand); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .screen-head .title { font-weight: 600; font-size: 13.5px; }
+  .screen-head .count { margin-left: auto; color: var(--text-muted); font-size: 12px; }
+  .screen-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .placement-row { border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12.5px; }
+  .placement-row:hover { background: var(--surface-2); border-color: var(--brand); }
+  .placement-row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .feed { display: flex; flex-direction: column; }
+  .feed-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .feed-item:last-child { border-bottom: 0; }
+  .feed-dot { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--brand-soft); color: var(--brand); font-size: 13px; }
+  .feed-dot.green { background: var(--green-soft); color: var(--green); }
+  .feed-dot.yellow { background: var(--yellow-soft); color: var(--yellow); }
+  .feed-dot.blue { background: var(--media-soft); color: var(--media); }
+  .feed-body .actor { font-weight: 500; }
+  .feed-body .ts { color: var(--text-dim); font-size: 12px; }
+  .feed-body .desc { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+  .bar { height: 6px; background: var(--gray-soft); border-radius: 3px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--brand); }
+  .stat-line { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .stat-line .item { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 12.5px; }
+  .stat-line .item b { color: var(--text); font-weight: 500; }
+  .banner { background: linear-gradient(90deg, #eef4ff 0%, #f4ebff 100%); border: 1px solid #d6e4ff; border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
+  .banner.green { background: linear-gradient(90deg, #f0fdf4 0%, #dcfce7 100%); border-color: #86efac; }
+  .banner.yellow { background: linear-gradient(90deg, #fffbeb 0%, #fef3c7 100%); border-color: #fcd34d; }
+  .banner.blue { background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 100%); border-color: #93c5fd; }
+  .banner .icon { font-size: 22px; }
+  .banner .title { font-weight: 600; font-size: 14px; }
+  .banner .desc { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+  .ab-card { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .ab-card .metric { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 13px; }
+  .ab-card .metric b { font-weight: 600; }
+  .hint-inline { color: var(--text-dim); font-size: 12px; }
+  .empty { text-align: center; color: var(--text-muted); padding: 40px 20px; }
+  .empty .big { font-size: 30px; margin-bottom: 8px; }
+  .int-flow { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding: 4px 0; }
+  .int-node { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface); min-width: 130px; text-align: center; font-size: 12.5px; flex-shrink: 0; }
+  .int-node .n-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .int-node .n-sub { color: var(--text-muted); font-size: 11.5px; }
+  .int-node.registry { border-color: var(--brand); background: var(--brand-soft); }
+  .int-node.registry .n-title { color: var(--brand-dark); }
+  .int-node.media-node { border-color: #3b82f6; background: #eff6ff; }
+  .int-node.media-node .n-title { color: #1d4ed8; }
+  .int-arrow { display: flex; align-items: center; padding: 0 6px; color: var(--text-dim); font-size: 18px; flex-shrink: 0; flex-direction: column; justify-content: center; gap: 2px; }
+  .int-arrow .arrow-label { font-size: 10px; color: var(--text-dim); white-space: nowrap; }
+
+  /* ── Media rules UI ── */
+  .media-section { margin-bottom: 24px; }
+  .media-section-title { font-size: 13.5px; font-weight: 600; margin: 0 0 12px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .form-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .form-row:last-child { border-bottom: 0; }
+  .form-label { flex: 0 0 280px; color: var(--text-muted); font-size: 13px; }
+  .form-hint { color: var(--text-dim); font-size: 12px; margin-left: 4px; }
+  .form-input { width: 80px; border: 1px solid var(--border-strong); padding: 5px 8px; border-radius: 6px; font-size: 13px; color: var(--text); background: var(--surface); }
+  .form-input:focus { outline: none; border-color: var(--media); box-shadow: 0 0 0 3px #dbeafe; }
+  .form-input.wide { width: 240px; }
+
+  /* Toggle switch */
+  .toggle-wrap { display: flex; align-items: center; gap: 10px; }
+  .toggle { position: relative; width: 38px; height: 22px; cursor: pointer; display: inline-block; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: #d1d5db; border-radius: 11px; transition: background 0.2s; }
+  .toggle-slider::before { content: ''; position: absolute; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .toggle input:checked + .toggle-slider { background: var(--brand); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+  .toggle-label { font-size: 13px; color: var(--text-muted); }
+  .toggle-label.on { color: var(--green); font-weight: 500; }
+  .toggle-label.off { color: var(--text-dim); }
+
+  /* Slot table */
+  table.slot-table { width: 100%; border-collapse: collapse; }
+  table.slot-table th { background: var(--surface-2); border-bottom: 1px solid var(--border); text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); font-weight: 600; padding: 9px 14px; }
+  table.slot-table td { border-bottom: 1px solid var(--border); padding: 10px 14px; font-size: 13.5px; vertical-align: middle; }
+  table.slot-table tr:last-child td { border-bottom: 0; }
+  table.slot-table tr.slot-off td { opacity: 0.45; }
+  table.slot-table tr.slot-off td:first-child, table.slot-table tr.slot-off td:last-child { opacity: 1; }
+
+  /* Metric tile */
+  .metric-tile { background: var(--gray-soft); border-radius: 8px; padding: 12px 14px; text-align: center; }
+  .metric-tile .mt-label { font-size: 11.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .metric-tile .mt-value { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .metric-tile .mt-hint { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .metrics-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: #15803d; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 1100px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { position: relative; height: auto; }
+    .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; }
+    .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo" aria-label="X5">
+        <svg width="34" height="34" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M33 4 C36 4 37 7 36.5 11 C34.5 25 23 36 9 36 C5 36 3 33.5 3.5 29 C5 16 16 4 33 4 Z" fill="#5FAF2D"/>
+          <path d="M11 31 C14 22 21 13 31 7" stroke="rgba(0,0,0,0.18)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          <text x="20" y="33" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="900" fill="#0a0a0a" text-anchor="middle" style="letter-spacing:-0.5px">X5</text>
+        </svg>
+      </div>
+      <div>
+        <div class="logo">Placement Registry</div>
+        <div class="logo-sub">МП ТС5 · v0.3 · Медиа</div>
+      </div>
+    </div>
+
+    <div class="nav-section">Учёт</div>
+    <div class="nav-item active" data-route="placements">📋 Плейсменты <span class="badge" id="nav-count-placements">0</span></div>
+    <div class="nav-item" data-route="map">🗺️ Карта по экранам</div>
+    <div class="nav-item" data-route="overview">📊 Обзор</div>
+
+    <div class="nav-section">Мониторинг</div>
+    <div class="nav-item" data-route="discovery">🤖 Discovery-события <span class="badge" id="nav-count-discovery">0</span></div>
+    <div class="nav-item" data-route="audit">🕘 Лог изменений</div>
+
+    <div class="nav-section">X5 Media</div>
+    <div class="nav-item media-nav" data-route="media-overview">📢 Медиа-плейсменты <span class="badge" id="nav-count-media">0</span></div>
+
+    <div class="nav-section">Документация</div>
+    <div class="nav-item" data-route="integration">🔌 Интеграция</div>
+    <div class="nav-item" data-route="api">📄 API контракт</div>
+
+    <div class="mvp-badge">
+      <div class="mvp-title">📢 v0.3: Медиа-правила</div>
+      Реестр хранит правила встраивания медиа-объектов в рекомендательные листинги. X5 Media предоставляет контент — реестр определяет где и как.
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">
+        <a id="bc-home">Реестр</a>
+        <span id="bc-tail"></span>
+      </div>
+      <div class="spacer"></div>
+      <div class="role-switch" id="role-switch">
+        <button data-role="admin" class="active">Команда Каталог</button>
+        <button data-role="media">X5 Media</button>
+        <button data-role="trade">Trade-Promo</button>
+        <button data-role="recsys">RecSys</button>
+      </div>
+      <div class="user-pill">
+        <span class="avatar" id="user-avatar">РП</span>
+        <span class="meta">
+          <span id="user-name">Роман Первушин</span>
+          <small id="user-team">Команда Каталог</small>
+        </span>
+      </div>
+    </div>
+
+    <div class="content" id="content"></div>
+  </main>
+</div>
+
+<script>
+/* =============================================================
+   ДАННЫЕ
+   ============================================================= */
+const OWNERS = ['Каталог', 'X5 Media', 'Trade-Promo', 'Лояльность', 'RecSys'];
+const SOURCES = ['recsys', 'pbase', 'catalog', 'customer'];
+
+function sourceLabel(s) {
+  return { recsys: 'RecSys (ML)', pbase: 'pBase / Promo', catalog: 'Catalog', customer: 'Customer' }[s] || s;
+}
+function sourceChip(s) {
+  const map = { recsys: 'blue', pbase: 'purple', catalog: 'yellow', customer: 'green' };
+  return `<span class="chip ${map[s] || ''}"><span class="dot"></span>${sourceLabel(s) || '—'}</span>`;
+}
+function statusChip(st) {
+  const map = { active: ['green', '● активен'], draft: ['yellow', '◌ новый (ожидает)'], archived: ['', '○ в архиве'] };
+  const [cls, label] = map[st] || ['', st];
+  return `<span class="chip ${cls}" title="Статус получен из внешней системы">${label}</span>`;
+}
+function abChip(ab) {
+  if (!ab) return '<span class="chip">—</span>';
+  const colorMap = { green: 'green', yellow: 'yellow', red: 'red', gray: '' };
+  const phaseLabel = { 'rolled-out': 'раскатан 100%', 'in-progress': 'A/B активен', 'planned': 'запланирован', 'none': 'без AB' }[ab.phase] || ab.phase;
+  return `<span class="chip ${colorMap[ab.color] || ''}">${phaseLabel}</span>`;
+}
+function personalizationChip(p) {
+  return p ? `<span class="chip green">🎯 персонализирован</span>` : `<span class="chip">не персон.</span>`;
+}
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function el(html) {
+  const t = document.createElement('template');
+  t.innerHTML = html.trim();
+  return t.content.firstElementChild;
+}
+function showToast(msg, color = '#15803d') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = color;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Состояние тоглов медиа-слотов (редактируемое в прототипе)
+const MEDIA_TOGGLES = { slot_5: true, slot_10: true, slot_15: true, slot_20: false, slot_25: true };
+// Редактируемые правила (MVP — в памяти)
+const MEDIA_FORM = { slot_frequency: 5, max_per_scroll: 1, repeat_min_interval: 10, stub_required_count: 5, ad_platform_timeout_ms: 100, ad_platform_slot_id: 'main_endless_rec_v1', fallback_behavior: 'fill_with_product' };
+
+const PLACEMENTS = [
+  {
+    id: 'main.endless_recommendation',
+    title: 'Главная · Бесконечные рекомендации',
+    screen: 'Главная',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    context_type: 'user',
+    limit: null,
+    fallback_type: 'fill_with_product',
+    status: 'active',
+    data_source_note: 'Товарный поток — RecSys · Правила медиа — реестр · обновлено: 2026-07-22',
+    ab_status: { phase: 'planned', color: 'gray', note: 'A/B запланирован после MVP-запуска медиа-интеграции' },
+    metrics: { rps: 3200, p95_ms: 280, error_rate: 0.4, last_request: '2 сек назад' },
+    business: { ctr: 8.4 },
+    description: 'Главный рекомендательный листинг. Бесконечный скролл. RecSys формирует товарный поток; X5 Media встраивает рекламные баннеры по правилам реестра (BT MOBILE-2577).',
+    media_rules: true,
+  },
+  {
+    id: 'home.recsys.foryou',
+    title: 'Главная · Подобрали для вас',
+    screen: 'Главная',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    context_type: 'user',
+    limit: 30,
+    fallback_type: 'top-popular',
+    status: 'active',
+    data_source_note: 'Конфиг получен от RecSys · последнее обновление: 2026-05-26 08:12',
+    ab_status: { phase: 'rolled-out', color: 'green', delta_margin: '+0,33%', delta_items: '+0,44%' },
+    metrics: { rps: 1240, p95_ms: 220, error_rate: 0.4, last_request: '5 сек назад' },
+    business: { rto: '+0,33%', margin: '+0,33%', ctr: 8.4 },
+    description: 'Bert4Rec + CatBoost-реранкер. Пересчёт ежедневно для пользователей с новой покупкой.',
+  },
+  {
+    id: 'home.recsys.profitable',
+    title: 'Главная · Выгодно купить ещё',
+    screen: 'Главная',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    context_type: 'user',
+    limit: 30,
+    fallback_type: 'top-popular',
+    status: 'active',
+    data_source_note: 'Конфиг получен от RecSys · последнее обновление: 2026-05-26 08:12',
+    ab_status: { phase: 'rolled-out', color: 'green', delta_margin: '+0,28%', delta_items: '+0,15%' },
+    metrics: { rps: 980, p95_ms: 240, error_rate: 0.3, last_request: '8 сек назад' },
+    business: { rto: '+0,28%', margin: '+0,28%', ctr: 7.1 },
+    description: 'Маржинальный фокус. Подмешиваем товары с высокой маржой.',
+  },
+  {
+    id: 'home.media.hidden',
+    title: 'Главная · Скрытая подборка X5 Media',
+    screen: 'Главная',
+    owner: 'X5 Media',
+    source: 'pbase',
+    formation_type: 'manual',
+    ranking_type: 'default',
+    personalization: false,
+    context_type: '—',
+    limit: 40,
+    fallback_type: 'none',
+    status: 'active',
+    data_source_note: 'Конфиг получен из Admin X5 Media · последнее обновление: 2026-05-19 09:51',
+    ab_status: { phase: 'none', color: 'gray' },
+    metrics: { rps: 220, p95_ms: 145, error_rate: 0.2, last_request: '24 сек назад' },
+    business: { ctr: 3.1 },
+    description: 'Управляется из Admin X5 Media. Категории до 2 уровней + PLU.',
+  },
+  {
+    id: 'home.catalog.discounts',
+    title: 'Главная · Акции и скидки',
+    screen: 'Главная',
+    owner: 'Trade-Promo',
+    source: 'catalog',
+    formation_type: 'auto',
+    ranking_type: 'default',
+    personalization: false,
+    context_type: '—',
+    limit: 50,
+    fallback_type: 'none',
+    status: 'active',
+    data_source_note: 'Конфиг получен из Admin Trade-Promo · последнее обновление: 2026-05-21 10:15',
+    ab_status: { phase: 'none', color: 'gray' },
+    metrics: { rps: 880, p95_ms: 130, error_rate: 0.2, last_request: '4 сек назад' },
+    business: { ctr: 9.8 },
+  },
+  {
+    id: 'search.recsys.start',
+    title: 'Поиск · Карусель на стартовом экране',
+    screen: 'Поиск',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    context_type: 'user',
+    limit: 30,
+    fallback_type: 'top-popular',
+    status: 'active',
+    data_source_note: 'Конфиг получен от RecSys · последнее обновление: 2026-05-26 08:12',
+    ab_status: { phase: 'rolled-out', color: 'green', delta_margin: '+0,33%' },
+    metrics: { rps: 1620, p95_ms: 210, error_rate: 0.3, last_request: '2 сек назад' },
+    business: { rto: '+0,33%', margin: '+0,33%', ctr: 12.5 },
+    description: 'Плейсмент на экране поиска — до ввода запроса. Персональные рекомендации.',
+  },
+  {
+    id: 'cart.recsys.dontforget',
+    title: 'Корзина · Не забудьте купить',
+    screen: 'Корзина',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'hybrid',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    context_type: 'cart',
+    limit: 20,
+    fallback_type: 'manual-shelf',
+    status: 'active',
+    data_source_note: 'Конфиг получен от RecSys · последнее обновление: 2026-05-26 08:12',
+    ab_status: { phase: 'rolled-out', color: 'green', delta_margin: '+0,39%', delta_items: '+0,55%' },
+    metrics: { rps: 740, p95_ms: 280, error_rate: 0.5, last_request: '3 сек назад' },
+    business: { rto: '+0,55%', margin: '+0,39%', ctr: 11.2 },
+    description: 'Гибридная модель: карусель RecSys + вертикальный скролл.',
+  },
+  {
+    id: 'pdp.recsys.similar',
+    title: 'Карточка товара · Похожие товары',
+    screen: 'Карточка товара',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: false,
+    context_type: 'product',
+    limit: 25,
+    fallback_type: 'top-category',
+    status: 'active',
+    data_source_note: 'Конфиг получен от RecSys · последнее обновление: 2026-05-26 08:12',
+    ab_status: { phase: 'rolled-out', color: 'green', delta_margin: '+0,33%', delta_avg_check: '+0,13%' },
+    metrics: { rps: 2150, p95_ms: 180, error_rate: 0.2, last_request: '1 сек назад' },
+    business: { margin: '+0,33%', ctr: 9.2 },
+    description: 'Контекстная неперсонализированная LLM-модель, до 25 комплементов на товар.',
+  },
+  {
+    id: 'category.recsys.recommend',
+    title: 'Листинг · Карусель «Рекомендуем»',
+    screen: 'Листинг',
+    owner: 'Каталог',
+    source: 'recsys',
+    formation_type: 'ml',
+    ranking_type: 'pers-recsys',
+    personalization: true,
+    context_type: 'category',
+    limit: 20,
+    fallback_type: 'top-category',
+    status: 'active',
+    data_source_note: 'Конфиг получен от RecSys · последнее обновление: 2026-05-26 08:12',
+    ab_status: { phase: 'rolled-out', color: 'gray' },
+    metrics: { rps: 1320, p95_ms: 195, error_rate: 0.3, last_request: '4 сек назад' },
+    business: { ctr: 7.8 },
+  },
+  {
+    id: 'profile.favorites',
+    title: 'Профиль · Избранные товары',
+    screen: 'Профиль',
+    owner: 'Лояльность',
+    source: 'customer',
+    formation_type: 'manual',
+    ranking_type: 'default',
+    personalization: true,
+    context_type: 'user',
+    limit: 200,
+    fallback_type: 'none',
+    status: 'active',
+    data_source_note: 'Конфиг получен из Loyalty Service · последнее обновление: 2026-05-18 11:00',
+    ab_status: { phase: 'none', color: 'gray' },
+    metrics: { rps: 320, p95_ms: 90, error_rate: 0.1, last_request: '7 сек назад' },
+    business: { ctr: 14.2 },
+  },
+  {
+    id: 'cart.draft.empty-cart',
+    title: 'Корзина · Полка на пустом экране (новый)',
+    screen: 'Корзина',
+    owner: '—',
+    source: '—',
+    formation_type: '—',
+    ranking_type: '—',
+    personalization: false,
+    context_type: '—',
+    limit: 0,
+    fallback_type: 'none',
+    status: 'draft',
+    data_source_note: 'Зарегистрирован автоматически discovery-агентом 2026-05-17 · владелец не назначен',
+    ab_status: { phase: 'none', color: 'gray' },
+    metrics: { rps: 0, p95_ms: 0, error_rate: 0, last_request: '—' },
+    business: {},
+    description: 'Обнаружен новый placement_id в запросах МП. Ожидает назначения командой Каталог.',
+  },
+];
+
+const DISCOVERY_EVENTS = [
+  {
+    id: 'EV-2026-035',
+    type: 'media-rules',
+    placement_id: 'main.endless_recommendation',
+    title: 'Зарегистрированы правила медиа-встраивания',
+    description: 'Команда Каталог создала правила встраивания медиа-объектов для плейсмента main.endless_recommendation: частота слота 5, max_per_scroll 1, 5 слотов с тоглами. slot_id в AdSDK: main_endless_rec_v1.',
+    status: 'synced',
+    created_at: '2026-07-22 11:40',
+  },
+  {
+    id: 'EV-2026-031',
+    type: 'new-placement',
+    placement_id: 'cart.draft.empty-cart',
+    title: 'Обнаружен новый placement_id',
+    description: 'МП начало отправлять запросы с placement_id «cart.draft.empty-cart». Плейсмент зарегистрирован со статусом «новый», ожидает подтверждения.',
+    status: 'pending',
+    created_at: '2026-05-17 14:22',
+  },
+  {
+    id: 'EV-2026-030',
+    type: 'config-update',
+    placement_id: 'home.recsys.foryou',
+    title: 'RecSys обновил конфиг плейсмента',
+    description: 'RecSys передал обновление конфигурации: ranking_type изменён на новую версию модели. Реестр обновлён автоматически.',
+    status: 'synced',
+    created_at: '2026-05-26 08:12',
+  },
+];
+
+const AUDIT = [
+  { ts: '2026-07-22 11:40', actor: 'Роман Первушин (Admin UI)', action: 'media', desc: 'Созданы медиа-правила для main.endless_recommendation: slot_frequency=5, 5 слотов, slot_id=main_endless_rec_v1.' },
+  { ts: '2026-07-22 11:35', actor: 'RecSys (auto-sync)', action: 'sync', desc: 'Зарегистрирован плейсмент main.endless_recommendation: товарный поток RecSys, бесконечная лента.' },
+  { ts: '2026-05-26 08:12', actor: 'RecSys (auto-sync)', action: 'sync', desc: 'Синхронизированы конфиги 9 плейсментов RecSys.' },
+  { ts: '2026-05-17 14:22', actor: 'Discovery-агент', action: 'discover', desc: 'Обнаружен новый placement_id: cart.draft.empty-cart. Добавлен со статусом «новый».' },
+];
+
+/* =============================================================
+   СОСТОЯНИЕ
+   ============================================================= */
+const STATE = {
+  route: 'placements',
+  detailId: null,
+  detailTab: 'overview',
+  role: 'admin',
+  filter: { search: '', owner: '', status: '' },
+};
+
+const ROLES = {
+  admin:  { name: 'Роман Первушин', team: 'Команда Каталог', avatar: 'РП', filterOwner: null },
+  media:  { name: 'А. Зайцев', team: 'X5 Media', avatar: 'АЗ', filterOwner: 'X5 Media' },
+  trade:  { name: 'М. Кузнецова', team: 'Trade-Promo', avatar: 'МК', filterOwner: 'Trade-Promo' },
+  recsys: { name: 'В. Мальцев', team: 'RecSys', avatar: 'ВМ', filterOwner: null },
+};
+
+function visiblePlacements() {
+  const r = ROLES[STATE.role];
+  if (r.filterOwner) return PLACEMENTS.filter(p => p.owner === r.filterOwner);
+  return PLACEMENTS;
+}
+
+function todayLabel() {
+  return new Date().toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+/* =============================================================
+   НАВИГАЦИЯ
+   ============================================================= */
+function navigate(route, detailId = null, detailTab = 'overview') {
+  STATE.route = route;
+  STATE.detailId = detailId;
+  STATE.detailTab = detailTab;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.route === route && !detailId));
+  const tail = document.getElementById('bc-tail');
+  if (detailId) {
+    const p = PLACEMENTS.find(x => x.id === detailId);
+    tail.innerHTML = ` › ${escapeHtml(p?.title || detailId)}`;
+  } else {
+    const titles = { placements: 'Плейсменты', map: 'Карта', overview: 'Обзор', discovery: 'Discovery', audit: 'Лог изменений', integration: 'Интеграция', api: 'API контракт', 'media-overview': 'Медиа-плейсменты' };
+    tail.innerHTML = ` › ${titles[route] || ''}`;
+  }
+  render();
+}
+
+document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => navigate(n.dataset.route)));
+document.getElementById('bc-home').addEventListener('click', () => navigate('placements'));
+document.querySelectorAll('#role-switch button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#role-switch button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    STATE.role = b.dataset.role;
+    const r = ROLES[STATE.role];
+    document.getElementById('user-name').textContent = r.name;
+    document.getElementById('user-team').textContent = r.team;
+    document.getElementById('user-avatar').textContent = r.avatar;
+    render();
+  });
+});
+
+/* =============================================================
+   РЕЕСТР ПЛЕЙСМЕНТОВ
+   ============================================================= */
+function renderPlacementsList() {
+  const visible = visiblePlacements();
+  const f = STATE.filter;
+  let rows = visible.filter(p => {
+    if (f.search && !(p.id.includes(f.search.toLowerCase()) || p.title.toLowerCase().includes(f.search.toLowerCase()))) return false;
+    if (f.owner && p.owner !== f.owner) return false;
+    if (f.status && p.status !== f.status) return false;
+    return true;
+  });
+
+  const mediaCount = visible.filter(x => x.media_rules).length;
+  const activeCount = visible.filter(x => x.status === 'active').length;
+  const draftCount = visible.filter(x => x.status === 'draft').length;
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+
+  root.appendChild(el(`
+    <div class="stack">
+      <div>
+        <h2 class="h2">Реестр плейсментов</h2>
+        <div class="subtle">Единый учёт товарных подборок в МП ТС5. ${STATE.role !== 'admin' && STATE.role !== 'recsys' ? `Отображаются плейсменты команды <b>${ROLES[STATE.role].filterOwner}</b>.` : 'Все плейсменты.'}</div>
+      </div>
+
+      <div class="banner blue">
+        <span class="icon">📢</span>
+        <div>
+          <div class="title">v0.3 · Медиа-правила в реестре</div>
+          <div class="desc">Реестр теперь хранит правила встраивания медиа-объектов в рекомендательные листинги. Первый плейсмент: <b>main.endless_recommendation</b>. Правила редактируются командой Каталог — без деплоя кода.</div>
+        </div>
+      </div>
+
+      <div class="grid-4">
+        <div class="card kpi"><div class="label">Плейсментов</div><div class="value">${visible.length}</div><div class="hint">${activeCount} активных · ${draftCount} новых</div></div>
+        <div class="card kpi"><div class="label">С медиа-правилами</div><div class="value" style="color:var(--media);">${mediaCount}</div><div class="hint">X5 Media встраивается</div></div>
+        <div class="card kpi"><div class="label">Персонализированы</div><div class="value">${Math.round(visible.filter(x=>x.personalization).length/visible.length*100)}%</div><div class="hint">получают модель RecSys</div></div>
+        <div class="card kpi"><div class="label">Владельцев</div><div class="value">${new Set(visible.filter(x=>x.owner!=='—').map(x=>x.owner)).size}</div><div class="hint">${[...new Set(visible.filter(x=>x.owner!=='—').map(x=>x.owner))].join(' · ')}</div></div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <input type="text" id="f-search" placeholder="🔎 Поиск по placement_id или названию" value="${escapeHtml(f.search)}">
+          <select id="f-owner">
+            <option value="">Все владельцы</option>
+            ${OWNERS.map(o => `<option value="${o}" ${f.owner===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+          <select id="f-status">
+            <option value="">Все статусы</option>
+            <option value="active" ${f.status==='active'?'selected':''}>активные</option>
+            <option value="draft"  ${f.status==='draft'?'selected':''}>новые</option>
+          </select>
+          <div class="right">
+            <span class="chip media">📢 Медиа-правила: ${mediaCount}</span>
+          </div>
+        </div>
+        <table class="reg">
+          <thead>
+            <tr>
+              <th style="width:33%;">Плейсмент</th>
+              <th>Экран</th>
+              <th>Владелец</th>
+              <th>Источник</th>
+              <th>RPS</th>
+              <th>A/B</th>
+              <th>Медиа</th>
+              <th>Статус</th>
+            </tr>
+          </thead>
+          <tbody id="reg-tbody">
+            ${rows.length ? rows.map(p => `
+              <tr data-id="${p.id}" ${p.media_rules ? 'style="background:linear-gradient(90deg,#eff6ff 0%,transparent 28px)"' : ''}>
+                <td>
+                  <div class="title">${escapeHtml(p.title)}</div>
+                  <div class="pid">${p.id}</div>
+                </td>
+                <td>${escapeHtml(p.screen)}</td>
+                <td><span class="chip outline">${escapeHtml(p.owner)}</span></td>
+                <td>${sourceChip(p.source)}</td>
+                <td><b>${p.metrics.rps > 0 ? p.metrics.rps.toLocaleString('ru-RU') : '—'}</b>${p.metrics.rps > 0 ? ' <span class="hint-inline">/с</span>' : ''}</td>
+                <td>${abChip(p.ab_status)}</td>
+                <td>${p.media_rules ? '<span class="chip media">📢 есть</span>' : '<span class="chip" style="opacity:0.4;">—</span>'}</td>
+                <td>${statusChip(p.status)}</td>
+              </tr>
+            `).join('') : `<tr><td colspan="8"><div class="empty"><div class="big">🔍</div>Ничего не найдено</div></td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `));
+
+  document.getElementById('f-search').addEventListener('input', e => { STATE.filter.search = e.target.value; renderPlacementsList(); });
+  document.getElementById('f-owner').addEventListener('change', e => { STATE.filter.owner = e.target.value; renderPlacementsList(); });
+  document.getElementById('f-status').addEventListener('change', e => { STATE.filter.status = e.target.value; renderPlacementsList(); });
+  document.querySelectorAll('#reg-tbody tr[data-id]').forEach(tr => {
+    tr.addEventListener('click', () => navigate('placements', tr.dataset.id));
+  });
+}
+
+/* =============================================================
+   ДЕТАЛЬНАЯ СТРАНИЦА
+   ============================================================= */
+function renderDetail() {
+  const p = PLACEMENTS.find(x => x.id === STATE.detailId);
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+  if (!p) { root.appendChild(el(`<div class="empty"><div class="big">🤔</div>Плейсмент не найден</div>`)); return; }
+
+  const hasMedia = !!p.media_rules;
+  const head = el(`
+    <div class="card">
+      <div class="detail-header">
+        <div style="display:flex; align-items:flex-start; gap:14px;">
+          <div style="flex:1; min-width:0;">
+            <h2>${escapeHtml(p.title)}</h2>
+            <div class="pid" style="color:var(--text-muted); font-family:ui-monospace,monospace; font-size:13px; margin-top:2px;">${p.id}</div>
+            <div class="meta">
+              ${statusChip(p.status)}
+              <span class="chip outline">🖥️ ${escapeHtml(p.screen)}</span>
+              <span class="chip outline">👤 ${escapeHtml(p.owner)}</span>
+              ${sourceChip(p.source)}
+              ${personalizationChip(p.personalization)}
+              ${hasMedia ? '<span class="chip media">📢 Медиа-правила в реестре</span>' : ''}
+              ${abChip(p.ab_status)}
+            </div>
+            ${p.description ? `<div class="subtle" style="margin-top:10px;">${escapeHtml(p.description)}</div>` : ''}
+            <div style="margin-top:8px;">
+              <span class="chip" style="font-size:11.5px; background:#f0fdf4; color:#15803d;">📡 ${escapeHtml(p.data_source_note)}</span>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; flex-shrink:0;">
+            <button class="btn" id="btn-back">← К списку</button>
+            ${hasMedia ? '' : '<span class="chip" style="padding:7px 14px;font-size:13px;">🔒 Только просмотр</span>'}
+          </div>
+        </div>
+      </div>
+      <div class="tabs" id="tabs">
+        <div class="tab ${STATE.detailTab==='overview'?'active':''}" data-tab="overview">Параметры</div>
+        <div class="tab ${STATE.detailTab==='analytics'?'active':''}" data-tab="analytics">Мониторинг</div>
+        <div class="tab ${STATE.detailTab==='ab'?'active':''}" data-tab="ab">A/B-статус</div>
+        ${hasMedia ? `<div class="tab tab-media ${STATE.detailTab==='media'?'active':''}" data-tab="media">📢 Медиа-правила ✏️</div>` : ''}
+        <div class="tab ${STATE.detailTab==='config'?'active':''}" data-tab="config">JSON конфиг</div>
+      </div>
+      <div class="card-pad" id="tab-body"></div>
+    </div>
+  `);
+  root.appendChild(head);
+  head.querySelector('#btn-back').addEventListener('click', () => navigate('placements'));
+  head.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+    STATE.detailTab = t.dataset.tab;
+    navigate('placements', p.id, STATE.detailTab);
+  }));
+
+  const body = head.querySelector('#tab-body');
+
+  if (STATE.detailTab === 'overview') {
+    body.innerHTML = `
+      <div class="grid-2">
+        <div>
+          <h3 style="margin:0 0 12px; font-size:15px;">Параметры подборки</h3>
+          <dl class="dl">
+            <dt>placement_id</dt><dd><code>${p.id}</code></dd>
+            <dt>Экран</dt><dd>${escapeHtml(p.screen)}</dd>
+            <dt>Владелец</dt><dd>${escapeHtml(p.owner)}</dd>
+            <dt>Источник формирования</dt><dd>${sourceLabel(p.source) || '—'}</dd>
+            <dt>Тип формирования</dt><dd>${escapeHtml(p.formation_type)}</dd>
+            <dt>Тип ранжирования</dt><dd>${escapeHtml(p.ranking_type)}</dd>
+            <dt>Персонализация</dt><dd>${p.personalization ? '<span class="chip green">да</span>' : '<span class="chip">нет</span>'}</dd>
+            <dt>Контекст запроса</dt><dd>${escapeHtml(p.context_type)}</dd>
+            <dt>Лимит (товаров)</dt><dd>${p.limit || '∞ бесконечная лента'}</dd>
+            <dt>Fallback</dt><dd>${escapeHtml(p.fallback_type)}</dd>
+          </dl>
+          <div class="banner yellow" style="margin-top:16px; padding:10px 14px;">
+            <span class="icon" style="font-size:16px;">ℹ️</span>
+            <div class="desc" style="font-size:12px;">Базовые параметры плейсмента управляются в ${sourceLabel(p.source)}. Реестр обновляется автоматически при синхронизации.${p.media_rules ? ' <b>Медиа-правила</b> — редактируются здесь, на вкладке «Медиа-правила».' : ''}</div>
+          </div>
+        </div>
+        <div>
+          <h3 style="margin:0 0 12px; font-size:15px;">Бизнес-эффект</h3>
+          <div class="ab-card">
+            ${p.business?.rto ? `<div class="metric"><span>РТО на посетителя</span><b style="color:var(--green);">${p.business.rto}</b></div>` : ''}
+            ${p.business?.margin ? `<div class="metric"><span>Маржа на заказ</span><b style="color:var(--green);">${p.business.margin}</b></div>` : ''}
+            ${p.business?.ctr ? `<div class="metric"><span>CTR</span><b>${p.business.ctr}%</b></div>` : ''}
+            ${!p.business || !Object.keys(p.business).length ? `<div class="subtle">Нет данных</div>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  else if (STATE.detailTab === 'analytics') {
+    const rps = p.metrics.rps || 100;
+    const sparkData = Array.from({length: 24}, (_, i) => Math.max(0, rps * (0.6 + 0.4 * Math.sin(i / 3) + Math.random() * 0.3)));
+    const sparkPath = sparkData.map((v, i) => `${i * (200/23)},${50 - (v / Math.max(...sparkData, 1)) * 45}`).join(' ');
+    body.innerHTML = `
+      <div class="grid-2">
+        <div class="card card-pad">
+          <h3 style="margin:0 0 4px; font-size:14px;">RPS (последние 24ч)</h3>
+          <div class="subtle">Источник: Grafana</div>
+          <svg viewBox="0 0 200 50" preserveAspectRatio="none" style="width:100%; height:120px; margin-top:10px;">
+            <polyline fill="rgba(95,175,45,0.12)" stroke="none" points="0,50 ${sparkPath} 200,50"/>
+            <polyline fill="none" stroke="var(--brand)" stroke-width="1.5" points="${sparkPath}"/>
+          </svg>
+          <div class="stat-line" style="margin-top:8px;">
+            <span class="item">Сейчас: <b>${p.metrics.rps.toLocaleString('ru-RU')} RPS</b></span>
+            <span class="item">p95: <b>${p.metrics.p95_ms} ms</b></span>
+            <span class="item">Errors: <b>${p.metrics.error_rate}%</b></span>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <h3 style="margin:0 0 10px; font-size:14px;">Производительность</h3>
+          <div class="dl">
+            <dt>p50 latency</dt><dd><b>${Math.round(p.metrics.p95_ms * 0.55)} ms</b></dd>
+            <dt>p95 latency</dt><dd><b>${p.metrics.p95_ms} ms</b></dd>
+            <dt>p99 latency</dt><dd><b>${Math.round(p.metrics.p95_ms * 1.4)} ms</b></dd>
+            <dt>Error rate</dt><dd><b>${p.metrics.error_rate}%</b></dd>
+            <dt>Последний запрос</dt><dd><b>${escapeHtml(p.metrics.last_request)}</b></dd>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  else if (STATE.detailTab === 'ab') {
+    body.innerHTML = `
+      <div class="banner" style="margin-bottom:14px;">
+        <span class="icon">🧪</span>
+        <div>
+          <div class="title">AB-статус — ${abChip(p.ab_status)}</div>
+          <div class="desc">${escapeHtml(p.ab_status?.note || 'Нет активного эксперимента.')}</div>
+        </div>
+      </div>
+      <div class="card card-pad">
+        <div class="dl">
+          <dt>Фаза</dt><dd>${escapeHtml(p.ab_status?.phase || '—')}</dd>
+          <dt>Источник данных</dt><dd>AB-платформа X5</dd>
+          <dt>Управление</dt><dd><span class="chip yellow" style="font-size:12px;">только в AB-платформе</span></dd>
+        </div>
+      </div>
+    `;
+  }
+  else if (STATE.detailTab === 'media' && hasMedia) {
+    renderMediaTab(body);
+  }
+  else if (STATE.detailTab === 'config') {
+    const obj = {
+      placement_id: p.id, screen: p.screen, owner: p.owner, source: p.source,
+      formation_type: p.formation_type, ranking_type: p.ranking_type,
+      personalization: p.personalization, fallback_type: p.fallback_type,
+      context_type: p.context_type, limit: p.limit, status: p.status,
+    };
+    if (hasMedia) {
+      obj.media_rules = {
+        slot_frequency: MEDIA_FORM.slot_frequency,
+        max_per_scroll: MEDIA_FORM.max_per_scroll,
+        repeat_min_interval: MEDIA_FORM.repeat_min_interval,
+        stub_required_count: MEDIA_FORM.stub_required_count,
+        ad_platform_timeout_ms: MEDIA_FORM.ad_platform_timeout_ms,
+        ad_platform_slot_id: MEDIA_FORM.ad_platform_slot_id,
+        fallback_behavior: MEDIA_FORM.fallback_behavior,
+        feature_toggles: { ...MEDIA_TOGGLES },
+      };
+    }
+    const json = JSON.stringify(obj, null, 2);
+    const highlighted = json
+      .replace(/"([^"]+)":/g, '<span class="k">"$1"</span>:')
+      .replace(/: (true|false|null)/g, ': <span class="n">$1</span>')
+      .replace(/: (-?\d+(\.\d+)?)/g, ': <span class="n">$1</span>')
+      .replace(/: "([^"]*)"/g, ': <span class="s">"$1"</span>');
+    body.innerHTML = `
+      <div class="banner yellow" style="margin-bottom:14px;">
+        <span class="icon">📡</span>
+        <div>
+          <div class="title">Базовый конфиг — из ${escapeHtml(sourceLabel(p.source))}</div>
+          <div class="desc">${hasMedia ? 'Секция <b>media_rules</b> хранится в реестре и редактируется через вкладку «Медиа-правила».' : 'Редактирование — только в исходной системе.'}</div>
+        </div>
+      </div>
+      <pre class="code">${highlighted}</pre>
+    `;
+  }
+}
+
+/* =============================================================
+   ВКЛАДКА МЕДИА-ПРАВИЛА
+   ============================================================= */
+function renderMediaTab(body) {
+  const slots = [
+    { key: 'slot_5',  pos: 5,  fill_rate: 92, ctr: 2.1 },
+    { key: 'slot_10', pos: 10, fill_rate: 87, ctr: 1.9 },
+    { key: 'slot_15', pos: 15, fill_rate: 76, ctr: 2.3 },
+    { key: 'slot_20', pos: 20, fill_rate: null, ctr: null },
+    { key: 'slot_25', pos: 25, fill_rate: 81, ctr: 1.8 },
+  ];
+
+  body.innerHTML = `
+    <div class="stack">
+      <!-- Баннер: это правила реестра -->
+      <div class="banner blue">
+        <span class="icon">✏️</span>
+        <div>
+          <div class="title">Правила встраивания хранятся в реестре</div>
+          <div class="desc">Это единственное место, где задаются правила позиционирования медиа-объектов. X5 Media предоставляет контент через AdPlatform — реестр определяет где и как он встраивается. Изменения вступают в силу через ~1 час (кэш MS Catalog).</div>
+        </div>
+      </div>
+
+      <!-- Настройки частоты -->
+      <div class="card card-pad">
+        <div class="media-section-title">⚙️ Настройки частоты и позиционирования</div>
+        <div class="media-section">
+          <div class="form-row">
+            <span class="form-label">Частота слота (каждая N-я плитка)</span>
+            <input class="form-input" type="number" id="mf-slot_frequency" min="1" max="20" value="${MEDIA_FORM.slot_frequency}">
+            <span class="form-hint">плитка 5, 10, 15…</span>
+          </div>
+          <div class="form-row">
+            <span class="form-label">Максимум баннеров на один скролл</span>
+            <input class="form-input" type="number" id="mf-max_per_scroll" min="1" max="5" value="${MEDIA_FORM.max_per_scroll}">
+          </div>
+          <div class="form-row">
+            <span class="form-label">Минимальный интервал повтора (плиток)</span>
+            <input class="form-input" type="number" id="mf-repeat_min_interval" min="1" max="50" value="${MEDIA_FORM.repeat_min_interval}">
+            <span class="form-hint">баннер не повторяется раньше чем через N плиток</span>
+          </div>
+          <div class="form-row">
+            <span class="form-label">Позиций под заглушки (первые слоты)</span>
+            <input class="form-input" type="number" id="mf-stub_required_count" min="0" max="10" value="${MEDIA_FORM.stub_required_count}">
+            <span class="form-hint">если AdPlatform не вернул баннер</span>
+          </div>
+        </div>
+
+        <div class="media-section-title" style="margin-top:8px;">🔌 AdPlatform (X5 Media AdSDK)</div>
+        <div class="media-section">
+          <div class="form-row">
+            <span class="form-label">slot_id в AdSDK</span>
+            <input class="form-input wide" type="text" id="mf-ad_platform_slot_id" value="${escapeHtml(MEDIA_FORM.ad_platform_slot_id)}">
+            <span class="form-hint">передаётся в AdSDK при запросе баннера</span>
+          </div>
+          <div class="form-row">
+            <span class="form-label">Таймаут AdPlatform (мс)</span>
+            <input class="form-input" type="number" id="mf-ad_platform_timeout_ms" min="50" max="500" value="${MEDIA_FORM.ad_platform_timeout_ms}">
+            <span class="form-hint">при превышении — fallback</span>
+          </div>
+          <div class="form-row">
+            <span class="form-label">Fallback-поведение</span>
+            <select class="form-input wide" id="mf-fallback_behavior">
+              <option value="fill_with_product" ${MEDIA_FORM.fallback_behavior==='fill_with_product'?'selected':''}>Заменить товаром (рекомендуется)</option>
+              <option value="stub_banner" ${MEDIA_FORM.fallback_behavior==='stub_banner'?'selected':''}>Показать заглушку-баннер</option>
+              <option value="collapse" ${MEDIA_FORM.fallback_behavior==='collapse'?'selected':''}>Схлопнуть позицию</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; padding-top:4px;">
+          <button class="btn btn-primary" id="btn-save-media">💾 Сохранить правила</button>
+          <button class="btn" id="btn-cancel-media">Отмена</button>
+          <span class="hint-inline" style="align-self:center;">Изменения вступят в силу через ~1 час</span>
+        </div>
+      </div>
+
+      <!-- Таблица слотов с тоглами -->
+      <div class="card">
+        <div style="padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px;">
+          <div class="media-section-title" style="margin:0;">🎛️ Слоты — включение/отключение</div>
+          <span class="hint-inline">Управляйте каждым слотом отдельно. Изменение — через ~1 час.</span>
+        </div>
+        <table class="slot-table">
+          <thead>
+            <tr>
+              <th>Позиция (2 в ряд)</th>
+              <th>Позиция (3 в ряд)</th>
+              <th>Тип контента</th>
+              <th>Статус</th>
+              <th>Fill rate</th>
+              <th>CTR</th>
+            </tr>
+          </thead>
+          <tbody id="slot-tbody">
+            ${slots.map(s => `
+              <tr class="${MEDIA_TOGGLES[s.key] ? '' : 'slot-off'}" id="slot-row-${s.key}">
+                <td><b>${s.pos}</b></td>
+                <td><span class="hint-inline">${Math.round(s.pos * 1.4)}</span></td>
+                <td><span class="chip">media_banner</span> <span class="chip" style="opacity:0.55;">stub_banner</span></td>
+                <td>
+                  <div class="toggle-wrap">
+                    <label class="toggle" title="Включить/выключить слот ${s.pos}">
+                      <input type="checkbox" class="slot-toggle" data-key="${s.key}" ${MEDIA_TOGGLES[s.key] ? 'checked' : ''}>
+                      <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label ${MEDIA_TOGGLES[s.key] ? 'on' : 'off'}" id="toggle-label-${s.key}">${MEDIA_TOGGLES[s.key] ? '✅ вкл' : '⛔ откл'}</span>
+                  </div>
+                </td>
+                <td>${s.fill_rate !== null && MEDIA_TOGGLES[s.key] ? `<b>${s.fill_rate}%</b>` : '<span class="hint-inline">—</span>'}</td>
+                <td>${s.ctr !== null && MEDIA_TOGGLES[s.key] ? `<b>${s.ctr}%</b>` : '<span class="hint-inline">—</span>'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div style="padding:10px 14px; background:var(--surface-2); font-size:12px; color:var(--text-dim); border-top:1px solid var(--border);">
+          Позиции рассчитаны для 2 товаров в ряд. При 3 в ряд — умножается на 1.4. Заглушки (stub) отображаются при отсутствии баннера от AdPlatform.
+        </div>
+      </div>
+
+      <!-- Метрики (read-only Grafana) -->
+      <div class="card card-pad">
+        <div class="media-section-title">📊 Метрики плейсмента (Grafana · только чтение)</div>
+        <div class="metrics-grid">
+          <div class="metric-tile"><div class="mt-label">CTR</div><div class="mt-value" style="color:var(--media);">8,4%</div><div class="mt-hint">рекламные слоты</div></div>
+          <div class="metric-tile"><div class="mt-label">Fill rate</div><div class="mt-value" style="color:var(--green);">85%</div><div class="mt-hint">реальный баннер</div></div>
+          <div class="metric-tile"><div class="mt-label">Stub rate</div><div class="mt-value">12%</div><div class="mt-hint">показана заглушка</div></div>
+          <div class="metric-tile"><div class="mt-label">Revenue / 1k сессий</div><div class="mt-value" style="color:var(--green);">₽124</div><div class="mt-hint">атрибутировано медиа</div></div>
+          <div class="metric-tile"><div class="mt-label">Viewability</div><div class="mt-value">78%</div><div class="mt-hint">баннер в зоне видимости</div></div>
+        </div>
+        <div class="subtle" style="margin-top:12px;">Метрики обновляются каждые 5 минут. Данные из <code>label: placement_id=main.endless_recommendation</code> в Grafana/Prometheus.</div>
+      </div>
+
+      <!-- Схема работы -->
+      <div class="card card-pad">
+        <div class="media-section-title">🏗️ Как это работает на горячем пути</div>
+        <div class="int-flow">
+          <div class="int-node"><div class="n-title">МП ТС5</div><div class="n-sub">запрос ленты</div></div>
+          <div class="int-arrow"><div>→</div></div>
+          <div class="int-node" style="border-color:var(--purple); background:var(--purple-soft);">
+            <div class="n-title" style="color:var(--purple);">MS Catalog</div>
+            <div class="n-sub">asyncio.gather</div>
+          </div>
+          <div class="int-arrow"><div>→</div><div class="arrow-label">параллельно</div></div>
+          <div class="int-node"><div class="n-title">RecSys</div><div class="n-sub">товары</div></div>
+        </div>
+        <div class="int-flow" style="margin-top:6px; padding-left:160px;">
+          <div class="int-arrow"><div>→</div></div>
+          <div class="int-node media-node"><div class="n-title">AdPlatform</div><div class="n-sub">баннеры X5 Media<br>timeout 100ms</div></div>
+          <div class="int-arrow"><div>→</div></div>
+          <div class="int-node registry"><div class="n-title">📋 Реестр (кэш)</div><div class="n-sub">правила позиций<br>обновл. 1 раз/ч</div></div>
+        </div>
+        <div class="subtle" style="margin-top:12px;">Реестр <b>не участвует</b> в каждом запросе. MS Catalog кэширует правила и читает их из Redis. Добавленная latency = 0 мс на горячем пути.</div>
+      </div>
+    </div>
+  `;
+
+  // Сохранение формы
+  body.querySelector('#btn-save-media').addEventListener('click', () => {
+    MEDIA_FORM.slot_frequency       = +body.querySelector('#mf-slot_frequency').value;
+    MEDIA_FORM.max_per_scroll       = +body.querySelector('#mf-max_per_scroll').value;
+    MEDIA_FORM.repeat_min_interval  = +body.querySelector('#mf-repeat_min_interval').value;
+    MEDIA_FORM.stub_required_count  = +body.querySelector('#mf-stub_required_count').value;
+    MEDIA_FORM.ad_platform_timeout_ms = +body.querySelector('#mf-ad_platform_timeout_ms').value;
+    MEDIA_FORM.ad_platform_slot_id  = body.querySelector('#mf-ad_platform_slot_id').value;
+    MEDIA_FORM.fallback_behavior    = body.querySelector('#mf-fallback_behavior').value;
+    showToast('✅ Правила сохранены · вступят в силу через ~1 час');
+  });
+  body.querySelector('#btn-cancel-media').addEventListener('click', () => {
+    navigate('placements', STATE.detailId, 'media');
+  });
+
+  // Тоглы слотов
+  body.querySelectorAll('.slot-toggle').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const key = cb.dataset.key;
+      MEDIA_TOGGLES[key] = cb.checked;
+      const row = body.querySelector(`#slot-row-${key}`);
+      const lbl = body.querySelector(`#toggle-label-${key}`);
+      row.classList.toggle('slot-off', !cb.checked);
+      lbl.textContent = cb.checked ? '✅ вкл' : '⛔ откл';
+      lbl.className = `toggle-label ${cb.checked ? 'on' : 'off'}`;
+      showToast(cb.checked ? `✅ Слот ${key.replace('slot_','')} включён` : `⛔ Слот ${key.replace('slot_','')} выключен`, cb.checked ? '#15803d' : '#b42318');
+    });
+  });
+}
+
+/* =============================================================
+   МЕДИА-ОБЗОР (nav item "Медиа-плейсменты")
+   ============================================================= */
+function renderMediaOverview() {
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+  const mediaP = PLACEMENTS.filter(p => p.media_rules);
+  root.appendChild(el(`
+    <div class="stack">
+      <div>
+        <h2 class="h2">Медиа-плейсменты</h2>
+        <div class="subtle">Плейсменты с настроенными правилами встраивания медиа-объектов X5 Media. Правила хранятся в реестре и редактируются командой Каталог.</div>
+      </div>
+
+      <div class="banner blue">
+        <span class="icon">📢</span>
+        <div>
+          <div class="title">Разделение ответственности</div>
+          <div class="desc"><b>Реестр</b> — правила позиционирования (где, как часто, какой тип). <b>AdPlatform (X5 Media)</b> — контент (конкретные кампании, баннеры, аукцион). <b>MS Catalog</b> — runtime-сборка ответа из RecSys + AdPlatform по правилам реестра.</div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="card kpi"><div class="label">Плейсментов с медиа</div><div class="value" style="color:var(--media);">${mediaP.length}</div><div class="hint">MVP: только main.endless_recommendation</div></div>
+        <div class="card kpi"><div class="label">Активных слотов</div><div class="value">${Object.values(MEDIA_TOGGLES).filter(Boolean).length}</div><div class="hint">из ${Object.keys(MEDIA_TOGGLES).length} возможных</div></div>
+        <div class="card kpi"><div class="label">Fill rate (avg)</div><div class="value" style="color:var(--green);">85%</div><div class="hint">Grafana · обновлено 2 мин назад</div></div>
+      </div>
+
+      ${mediaP.map(p => `
+        <div class="card" style="cursor:pointer;" data-id="${p.id}" id="mc-${p.id}">
+          <div style="padding:16px 20px; display:flex; align-items:center; gap:14px;">
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:600; font-size:15px;">${escapeHtml(p.title)}</div>
+              <div class="pid" style="font-family:ui-monospace,monospace; color:var(--text-muted); font-size:12px; margin-top:2px;">${p.id}</div>
+              <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                ${statusChip(p.status)}
+                <span class="chip media">📢 Медиа-правила</span>
+                <span class="chip outline">slot_id: ${escapeHtml(MEDIA_FORM.ad_platform_slot_id)}</span>
+                <span class="chip">freq: каждая ${MEDIA_FORM.slot_frequency}-я плитка</span>
+                <span class="chip green">fill_rate 85%</span>
+              </div>
+            </div>
+            <button class="btn" style="flex-shrink:0;">📢 Открыть правила →</button>
+          </div>
+          <div style="background:var(--surface-2); border-top:1px solid var(--border); padding:10px 20px; display:flex; gap:24px;">
+            ${Object.entries(MEDIA_TOGGLES).map(([k,v]) => `
+              <div style="display:flex; align-items:center; gap:6px; font-size:12px;">
+                <span style="width:8px; height:8px; border-radius:50%; background:${v?'var(--green)':'var(--text-dim)'}; display:inline-block;"></span>
+                <span style="color:var(--text-muted);">Слот ${k.replace('slot_','')}</span>
+                <b style="color:${v?'var(--green)':'var(--text-dim)'};">${v?'вкл':'откл'}</b>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+
+      <div class="card card-pad">
+        <div class="media-section-title">🗺️ Следующие кандидаты (P1–P2)</div>
+        <table class="reg">
+          <thead><tr><th>placement_id</th><th>Экран</th><th>Формат</th><th>Приоритет</th><th>Статус</th></tr></thead>
+          <tbody>
+            <tr><td><code>catalog.listing.banner</code></td><td>Листинг категории</td><td>Вертикальный/горизонтальный баннер</td><td><span class="chip yellow">P1</span></td><td><span class="chip">в планах</span></td></tr>
+            <tr><td><code>catalog.listing.sponsored_card</code></td><td>Листинг категории</td><td>Закреплённая карточка товара</td><td><span class="chip yellow">P1</span></td><td><span class="chip">в планах</span></td></tr>
+            <tr><td><code>search.listing.banner</code></td><td>Результаты поиска</td><td>Контекстный баннер</td><td><span class="chip">P2</span></td><td><span class="chip">открытый вопрос</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `));
+
+  mediaP.forEach(p => {
+    const card = root.querySelector(`#mc-${p.id}`);
+    if (card) card.addEventListener('click', () => navigate('placements', p.id, 'media'));
+  });
+}
+
+/* =============================================================
+   КАРТА, ОБЗОР, DISCOVERY, AUDIT, ИНТЕГРАЦИЯ, API
+   ============================================================= */
+function renderMap() {
+  const root = document.getElementById('content');
+  const visible = visiblePlacements();
+  const byScreen = {};
+  visible.forEach(p => { (byScreen[p.screen] = byScreen[p.screen] || []).push(p); });
+  const screenIcons = { 'Главная':'🏠','Поиск':'🔍','Карточка товара':'🛒','Корзина':'🧺','Чекаут':'💳','Профиль':'👤','Листинг':'📑' };
+  root.innerHTML = '';
+  root.appendChild(el(`
+    <div class="stack">
+      <div><h2 class="h2">Карта плейсментов по экранам</h2><div class="subtle">Голубой фон — плейсменты с медиа-правилами.</div></div>
+      <div class="map-grid" id="map-grid"></div>
+    </div>
+  `));
+  const grid = document.getElementById('map-grid');
+  Object.keys(byScreen).sort().forEach(screen => {
+    const items = byScreen[screen];
+    const card = el(`
+      <div class="screen-card">
+        <div class="screen-head">
+          <div class="icon">${screenIcons[screen]||'📱'}</div>
+          <div class="title">${escapeHtml(screen)}</div>
+          <div class="count">${items.length}</div>
+        </div>
+        <div class="screen-body">
+          ${items.map(p => `
+            <div class="placement-row" data-id="${p.id}" style="${p.media_rules?'border-color:#93c5fd; background:#eff6ff;':''}" title="${escapeHtml(p.title)}">
+              ${sourceChip(p.source)}
+              <span class="name">${escapeHtml(p.title.replace(/^[^·]+·\s*/,''))}</span>
+              ${p.personalization ? '<span title="Персонализирован">🎯</span>' : ''}
+              ${p.media_rules ? '<span title="Медиа-правила">📢</span>' : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `);
+    grid.appendChild(card);
+    card.querySelectorAll('.placement-row[data-id]').forEach(r => r.addEventListener('click', () => navigate('placements', r.dataset.id)));
+  });
+}
+
+function renderOverview() {
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+  const visible = PLACEMENTS;
+  const total = visible.length;
+  const personalized = visible.filter(p=>p.personalization).length;
+  const activeAB = visible.filter(p=>p.ab_status?.phase==='in-progress').length;
+  const draft = visible.filter(p=>p.status==='draft').length;
+  const withMedia = visible.filter(p=>p.media_rules).length;
+  const byOwner = {};
+  visible.forEach(p => { byOwner[p.owner] = (byOwner[p.owner]||0) + 1; });
+  const byScreen = {};
+  visible.forEach(p => { byScreen[p.screen] = (byScreen[p.screen]||0) + 1; });
+  root.appendChild(el(`
+    <div class="stack">
+      <div><h2 class="h2">Обзор реестра</h2><div class="subtle">Дата: ${todayLabel()}</div></div>
+      <div class="grid-4">
+        <div class="card kpi"><div class="label">Плейсментов</div><div class="value">${total}</div><div class="hint">${visible.filter(p=>p.status==='active').length} активных</div></div>
+        <div class="card kpi"><div class="label">Персонализированы</div><div class="value">${Math.round(personalized/total*100)}%</div><div class="hint">${personalized} из ${total}</div></div>
+        <div class="card kpi"><div class="label">Медиа-правила</div><div class="value" style="color:var(--media);">${withMedia}</div><div class="hint">реестр управляет</div></div>
+        <div class="card kpi"><div class="label">Новые (без владельца)</div><div class="value">${draft}</div><div class="hint">ожидают подтверждения</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card card-pad">
+          <h3 style="margin:0 0 12px; font-size:14px;">По владельцам</h3>
+          ${Object.entries(byOwner).filter(([k])=>k!=='—').sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+            <div style="margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; font-size:13px;"><span>${escapeHtml(k)}</span><b>${v}</b></div>
+              <div class="bar" style="margin-top:4px;"><span style="width:${v/total*100}%; background:var(--purple);"></span></div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="card card-pad">
+          <h3 style="margin:0 0 12px; font-size:14px;">По экранам</h3>
+          <div class="grid-2" style="gap:8px;">
+            ${Object.entries(byScreen).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+              <div style="border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
+                <div class="subtle" style="margin-bottom:2px; font-size:12px;">${escapeHtml(k)}</div>
+                <div style="font-size:20px; font-weight:600;">${v}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `));
+}
+
+function renderDiscovery() {
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+  root.appendChild(el(`
+    <div class="stack">
+      <div><h2 class="h2">Discovery-события</h2><div class="subtle">Автоматические уведомления: новые плейсменты, обновления конфигов, изменения медиа-правил.</div></div>
+      <div class="card">
+        <table class="reg">
+          <thead><tr><th>ID</th><th>Тип</th><th>Плейсмент</th><th>Описание</th><th>Дата</th><th>Статус</th></tr></thead>
+          <tbody>
+            ${DISCOVERY_EVENTS.map(ev => `
+              <tr>
+                <td><code class="pid">${ev.id}</code></td>
+                <td><span class="chip ${{
+                  'new-placement':'yellow',
+                  'config-update':'blue',
+                  'media-rules':'media',
+                  'status-change':'green',
+                }[ev.type]||''}">${{
+                  'new-placement':'🆕 новый плейсмент',
+                  'config-update':'📡 обновление конфига',
+                  'media-rules':'📢 медиа-правила',
+                  'status-change':'🔄 смена статуса',
+                }[ev.type]||ev.type}</span></td>
+                <td><code class="pid">${escapeHtml(ev.placement_id)}</code></td>
+                <td style="max-width:360px;">${escapeHtml(ev.description)}</td>
+                <td style="white-space:nowrap;">${escapeHtml(ev.created_at)}</td>
+                <td><span class="chip ${ev.status==='pending'?'yellow':'green'}">${ev.status==='pending'?'⏳ ожидает':'✓ синхронизировано'}</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `));
+}
+
+function renderAudit() {
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+  const iconMap = { sync:'📡', archive:'📦', discover:'🤖', media:'📢' };
+  const classMap = { sync:'green', discover:'yellow', media:'blue', archive:'' };
+  root.appendChild(el(`
+    <div class="stack">
+      <div><h2 class="h2">Лог изменений</h2><div class="subtle">Синхронизация из внешних систем + изменения медиа-правил командой Каталог.</div></div>
+      <div class="card card-pad">
+        <div class="feed">
+          ${AUDIT.map(a => `
+            <div class="feed-item">
+              <div class="feed-dot ${classMap[a.action]||''}">${iconMap[a.action]||'•'}</div>
+              <div class="feed-body">
+                <div><span class="actor">${escapeHtml(a.actor)}</span> <span class="ts">· ${a.ts}</span></div>
+                <div class="desc">${escapeHtml(a.desc)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `));
+}
+
+function renderIntegration() {
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+  root.appendChild(el(`
+    <div class="stack">
+      <div><h2 class="h2">Интеграция</h2><div class="subtle">v0.3 — реестр управляет правилами медиа-встраивания. Горячий путь: MS Catalog читает правила из кэша.</div></div>
+
+      <div class="banner blue">
+        <span class="icon">🎯</span>
+        <div>
+          <div class="title">Реестр не на горячем пути</div>
+          <div class="desc">MS Catalog кэширует правила реестра (1 раз в час). На каждый запрос МП: asyncio.gather([RecSys, AdPlatform]) — параллельно. Правила читаются из Redis — <b>0 мс добавленной latency</b>.</div>
+        </div>
+      </div>
+
+      <div class="card card-pad">
+        <h3 style="margin:0 0 16px; font-size:15px;">Горячий путь (каждый запрос)</h3>
+        <div class="int-flow">
+          <div class="int-node"><div class="n-title">МП ТС5</div><div class="n-sub">GET /context</div></div>
+          <div class="int-arrow"><div>→</div></div>
+          <div class="int-node" style="border-color:var(--purple); background:var(--purple-soft);">
+            <div class="n-title" style="color:var(--purple);">MS Catalog</div>
+            <div class="n-sub">asyncio.gather</div>
+          </div>
+          <div class="int-arrow"><div>→</div><div class="arrow-label">параллельно</div></div>
+          <div class="int-node"><div class="n-title">RecSys</div><div class="n-sub">товарный поток</div></div>
+        </div>
+        <div class="int-flow" style="margin-top:6px; padding-left:200px;">
+          <div class="int-arrow"></div>
+          <div class="int-node media-node"><div class="n-title">AdPlatform</div><div class="n-sub">баннеры X5 Media<br>(timeout 100ms)</div></div>
+          <div class="int-arrow"><div>→</div></div>
+          <div class="int-node registry"><div class="n-title">📋 Реестр (кэш)</div><div class="n-sub">правила · Redis<br>обновл. раз/ч</div></div>
+        </div>
+      </div>
+
+      <div class="card card-pad">
+        <h3 style="margin:0 0 16px; font-size:15px;">Фоновая синхронизация правил</h3>
+        <div class="int-flow">
+          <div class="int-node registry"><div class="n-title">📋 Реестр (API)</div><div class="n-sub">GET /placements<br>?consumer=ms_catalog</div></div>
+          <div class="int-arrow"><div>→</div><div class="arrow-label">каждые 60 мин</div></div>
+          <div class="int-node" style="border-color:var(--purple); background:var(--purple-soft);"><div class="n-title" style="color:var(--purple);">MS Catalog</div><div class="n-sub">фоновый воркер</div></div>
+          <div class="int-arrow"><div>→</div></div>
+          <div class="int-node"><div class="n-title">Redis / in-memory</div><div class="n-sub">кэш правил</div></div>
+        </div>
+        <div class="subtle" style="margin-top:12px;">Этап 2: Kafka-событие при изменении правил → мгновенная инвалидация кэша в MS Catalog.</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card card-pad">
+          <h3 style="margin:0 0 10px; font-size:14px;">RecSys → Реестр (базовые данные)</h3>
+          <div class="dl">
+            <dt>Метод</dt><dd><code>POST /registry/sync/recsys</code></dd>
+            <dt>Данные</dt><dd>placement_id, ranking_type, model_version, статус</dd>
+            <dt>Периодичность</dt><dd>Event-driven + полная синхронизация раз/сутки</dd>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <h3 style="margin:0 0 10px; font-size:14px;">MS Catalog → Реестр (чтение правил)</h3>
+          <div class="dl">
+            <dt>Метод</dt><dd><code>GET /registry/placements?consumer=ms_catalog</code></dd>
+            <dt>Данные</dt><dd>media_rules, feature_toggles для всех активных плейсментов</dd>
+            <dt>Периодичность</dt><dd>Pull каждые 60 мин (MVP); Push Kafka (Этап 2)</dd>
+          </div>
+        </div>
+      </div>
+    </div>
+  `));
+}
+
+function renderApi() {
+  const root = document.getElementById('content');
+  root.innerHTML = '';
+  function h(json) {
+    return json
+      .replace(/"([^"]+)":/g, '<span class="k">"$1"</span>:')
+      .replace(/: (true|false|null)/g, ': <span class="n">$1</span>')
+      .replace(/: (-?\d+(\.\d+)?)/g, ': <span class="n">$1</span>')
+      .replace(/: "([^"]*)"/g, ': <span class="s">"$1"</span>');
+  }
+  const mediaResp = h(escapeHtml(JSON.stringify({
+    placement_id: 'main.endless_recommendation',
+    status: 'active',
+    media_rules: {
+      slot_frequency: 5, max_per_scroll: 1, repeat_min_interval: 10,
+      stub_required_count: 5, ad_platform_timeout_ms: 100,
+      ad_platform_slot_id: 'main_endless_rec_v1',
+      fallback_behavior: 'fill_with_product',
+      feature_toggles: { slot_5: true, slot_10: true, slot_15: true, slot_20: false, slot_25: true },
+    },
+    updated_at: '2026-07-22T11:40:00Z',
+  }, null, 2)));
+  const patchReq = h(escapeHtml(JSON.stringify({
+    slot_frequency: 5, max_per_scroll: 1,
+    ad_platform_slot_id: 'main_endless_rec_v1',
+    feature_toggles: { slot_20: true },
+  }, null, 2)));
+  root.appendChild(el(`
+    <div class="stack">
+      <div><h2 class="h2">API контракт — v0.3</h2><div class="subtle">Добавлены эндпоинты для медиа-правил. PATCH — только для секции media_rules, управляется командой Каталог.</div></div>
+
+      <div class="grid-2">
+        <div>
+          <h3 style="margin:0 0 8px; font-size:14px;">GET /registry/placements/{id} — с media_rules</h3>
+          <pre class="code">${mediaResp}</pre>
+        </div>
+        <div>
+          <h3 style="margin:0 0 8px; font-size:14px;">PATCH /registry/placements/{id}/media-rules</h3>
+          <div class="subtle" style="margin-bottom:8px;">Команда Каталог обновляет правила встраивания</div>
+          <pre class="code">${patchReq}</pre>
+        </div>
+      </div>
+
+      <div class="card card-pad">
+        <h3 style="margin:0 0 12px; font-size:14px;">Все эндпоинты</h3>
+        <table class="reg">
+          <thead><tr><th>Метод</th><th>Эндпоинт</th><th>Назначение</th><th>Кто вызывает</th></tr></thead>
+          <tbody>
+            <tr><td><span class="chip green">GET</span></td><td><code>/registry/placements</code></td><td>Список всех плейсментов</td><td>UI, MS Catalog</td></tr>
+            <tr><td><span class="chip green">GET</span></td><td><code>/registry/placements/{id}</code></td><td>Конфиг + media_rules одного плейсмента</td><td>MS Catalog (кэш-обновление)</td></tr>
+            <tr><td><span class="chip green">GET</span></td><td><code>/registry/placements?consumer=ms_catalog</code></td><td>Все правила для кэширования в MS Catalog</td><td>MS Catalog (фоновый воркер)</td></tr>
+            <tr style="background:var(--media-soft);"><td><span class="chip" style="background:#dbeafe; color:var(--media);">PATCH</span></td><td><code>/registry/placements/{id}/media-rules</code></td><td><b>Обновить медиа-правила</b> (slot_frequency, toggles, slot_id…)</td><td>Admin UI (команда Каталог)</td></tr>
+            <tr style="background:var(--media-soft);"><td><span class="chip" style="background:#dbeafe; color:var(--media);">PATCH</span></td><td><code>/registry/placements/{id}/media-rules/toggles</code></td><td>Быстрое вкл/выкл отдельного слота</td><td>Admin UI</td></tr>
+            <tr><td><span class="chip blue">POST</span></td><td><code>/registry/sync/recsys</code></td><td>RecSys пушит обновление конфига</td><td>RecSys (auto)</td></tr>
+            <tr><td><span class="chip blue">POST</span></td><td><code>/registry/discovery</code></td><td>Discovery-агент регистрирует новый placement_id</td><td>Discovery-агент</td></tr>
+            <tr><td><span class="chip green">GET</span></td><td><code>/registry/audit</code></td><td>Лог изменений</td><td>UI</td></tr>
+          </tbody>
+        </table>
+        <div class="banner yellow" style="margin-top:12px; padding:10px 14px;">
+          <span class="icon" style="font-size:16px;">⚠️</span>
+          <div class="desc" style="font-size:12px;"><b>Ограничение MVP:</b> PATCH доступен только для секции <code>media_rules</code>. Базовые параметры плейсмента (source, ranking_type, limit) — только через sync от внешних систем. Ролевая модель: один тип авторизованного пользователя (команда Каталог), read-only для X5 Media.</div>
+        </div>
+      </div>
+    </div>
+  `));
+}
+
+/* =============================================================
+   РЕНДЕР
+   ============================================================= */
+function render() {
+  const visible = visiblePlacements();
+  document.getElementById('nav-count-placements').textContent = visible.length;
+  document.getElementById('nav-count-discovery').textContent = DISCOVERY_EVENTS.filter(e => e.status === 'pending').length;
+  document.getElementById('nav-count-media').textContent = PLACEMENTS.filter(p => p.media_rules).length;
+
+  if (STATE.detailId) { renderDetail(); return; }
+  switch (STATE.route) {
+    case 'placements':     renderPlacementsList(); break;
+    case 'map':            renderMap(); break;
+    case 'overview':       renderOverview(); break;
+    case 'discovery':      renderDiscovery(); break;
+    case 'audit':          renderAudit(); break;
+    case 'integration':    renderIntegration(); break;
+    case 'api':            renderApi(); break;
+    case 'media-overview': renderMediaOverview(); break;
+    default:               renderPlacementsList();
+  }
+}
+
+render();
+</script>
+</body>
+</html>
