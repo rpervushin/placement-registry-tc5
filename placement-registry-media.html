@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Placement Registry v0.3 — Медиа-правила — МП ТС5</title>
+<title>Placement Registry v0.3 — МП ТС5</title>
 <style>
   :root {
     --bg: #f5f6f8;
@@ -239,7 +239,7 @@
       </div>
       <div>
         <div class="logo">Placement Registry</div>
-        <div class="logo-sub">МП ТС5 · v0.3 · Медиа</div>
+        <div class="logo-sub">МП ТС5 · v0.3</div>
       </div>
     </div>
 
@@ -252,16 +252,16 @@
     <div class="nav-item" data-route="discovery">🤖 Discovery-события <span class="badge" id="nav-count-discovery">0</span></div>
     <div class="nav-item" data-route="audit">🕘 Лог изменений</div>
 
-    <div class="nav-section">X5 Media</div>
-    <div class="nav-item media-nav" data-route="media-overview">📢 Медиа-плейсменты <span class="badge" id="nav-count-media">0</span></div>
+    <div class="nav-section">Встраивания</div>
+    <div class="nav-item media-nav" data-route="media-overview">📢 Медиа-встраивание <span class="badge" id="nav-count-media">0</span></div>
 
     <div class="nav-section">Документация</div>
     <div class="nav-item" data-route="integration">🔌 Интеграция</div>
     <div class="nav-item" data-route="api">📄 API контракт</div>
 
     <div class="mvp-badge">
-      <div class="mvp-title">📢 v0.3: Медиа-правила</div>
-      Реестр хранит правила встраивания медиа-объектов в рекомендательные листинги. X5 Media предоставляет контент — реестр определяет где и как.
+      <div class="mvp-title">v0.3: Правила встраивания</div>
+      Реестр теперь хранит правила позиционирования стороннего контента в рекомендательных листингах. Редактируется командой Каталог — без деплоя кода.
     </div>
   </aside>
 
@@ -295,7 +295,7 @@
 /* =============================================================
    ДАННЫЕ
    ============================================================= */
-const OWNERS = ['Каталог', 'X5 Media', 'Trade-Promo', 'Лояльность', 'RecSys'];
+const OWNERS = ['Каталог', 'Trade-Promo', 'Лояльность', 'RecSys'];
 const SOURCES = ['recsys', 'pbase', 'catalog', 'customer'];
 
 function sourceLabel(s) {
@@ -403,7 +403,7 @@ const PLACEMENTS = [
     id: 'home.media.hidden',
     title: 'Главная · Скрытая подборка X5 Media',
     screen: 'Главная',
-    owner: 'X5 Media',
+    owner: 'Каталог',
     source: 'pbase',
     formation_type: 'manual',
     ranking_type: 'default',
@@ -599,14 +599,15 @@ const STATE = {
 };
 
 const ROLES = {
-  admin:  { name: 'Роман Первушин', team: 'Команда Каталог', avatar: 'РП', filterOwner: null },
-  media:  { name: 'А. Зайцев', team: 'X5 Media', avatar: 'АЗ', filterOwner: 'X5 Media' },
-  trade:  { name: 'М. Кузнецова', team: 'Trade-Promo', avatar: 'МК', filterOwner: 'Trade-Promo' },
-  recsys: { name: 'В. Мальцев', team: 'RecSys', avatar: 'ВМ', filterOwner: null },
+  admin:  { name: 'Роман Первушин', team: 'Команда Каталог', avatar: 'РП', filterOwner: null, filterMedia: false },
+  media:  { name: 'А. Зайцев', team: 'X5 Media', avatar: 'АЗ', filterOwner: null, filterMedia: true },
+  trade:  { name: 'М. Кузнецова', team: 'Trade-Promo', avatar: 'МК', filterOwner: 'Trade-Promo', filterMedia: false },
+  recsys: { name: 'В. Мальцев', team: 'RecSys', avatar: 'ВМ', filterOwner: null, filterMedia: false },
 };
 
 function visiblePlacements() {
   const r = ROLES[STATE.role];
+  if (r.filterMedia) return PLACEMENTS.filter(p => p.media_rules || p.source === 'pbase');
   if (r.filterOwner) return PLACEMENTS.filter(p => p.owner === r.filterOwner);
   return PLACEMENTS;
 }
@@ -628,7 +629,7 @@ function navigate(route, detailId = null, detailTab = 'overview') {
     const p = PLACEMENTS.find(x => x.id === detailId);
     tail.innerHTML = ` › ${escapeHtml(p?.title || detailId)}`;
   } else {
-    const titles = { placements: 'Плейсменты', map: 'Карта', overview: 'Обзор', discovery: 'Discovery', audit: 'Лог изменений', integration: 'Интеграция', api: 'API контракт', 'media-overview': 'Медиа-плейсменты' };
+    const titles = { placements: 'Плейсменты', map: 'Карта', overview: 'Обзор', discovery: 'Discovery', audit: 'Лог изменений', integration: 'Интеграция', api: 'API контракт', 'media-overview': 'Медиа-встраивание' };
     tail.innerHTML = ` › ${titles[route] || ''}`;
   }
   render();
@@ -675,17 +676,9 @@ function renderPlacementsList() {
         <div class="subtle">Единый учёт товарных подборок в МП ТС5. ${STATE.role !== 'admin' && STATE.role !== 'recsys' ? `Отображаются плейсменты команды <b>${ROLES[STATE.role].filterOwner}</b>.` : 'Все плейсменты.'}</div>
       </div>
 
-      <div class="banner blue">
-        <span class="icon">📢</span>
-        <div>
-          <div class="title">v0.3 · Медиа-правила в реестре</div>
-          <div class="desc">Реестр теперь хранит правила встраивания медиа-объектов в рекомендательные листинги. Первый плейсмент: <b>main.endless_recommendation</b>. Правила редактируются командой Каталог — без деплоя кода.</div>
-        </div>
-      </div>
-
       <div class="grid-4">
         <div class="card kpi"><div class="label">Плейсментов</div><div class="value">${visible.length}</div><div class="hint">${activeCount} активных · ${draftCount} новых</div></div>
-        <div class="card kpi"><div class="label">С медиа-правилами</div><div class="value" style="color:var(--media);">${mediaCount}</div><div class="hint">X5 Media встраивается</div></div>
+        <div class="card kpi"><div class="label">С правилами встраивания</div><div class="value" style="color:var(--media);">${mediaCount}</div><div class="hint">сторонний контент настроен</div></div>
         <div class="card kpi"><div class="label">Персонализированы</div><div class="value">${Math.round(visible.filter(x=>x.personalization).length/visible.length*100)}%</div><div class="hint">получают модель RecSys</div></div>
         <div class="card kpi"><div class="label">Владельцев</div><div class="value">${new Set(visible.filter(x=>x.owner!=='—').map(x=>x.owner)).size}</div><div class="hint">${[...new Set(visible.filter(x=>x.owner!=='—').map(x=>x.owner))].join(' · ')}</div></div>
       </div>
@@ -702,9 +695,6 @@ function renderPlacementsList() {
             <option value="active" ${f.status==='active'?'selected':''}>активные</option>
             <option value="draft"  ${f.status==='draft'?'selected':''}>новые</option>
           </select>
-          <div class="right">
-            <span class="chip media">📢 Медиа-правила: ${mediaCount}</span>
-          </div>
         </div>
         <table class="reg">
           <thead>
@@ -731,7 +721,7 @@ function renderPlacementsList() {
                 <td>${sourceChip(p.source)}</td>
                 <td><b>${p.metrics.rps > 0 ? p.metrics.rps.toLocaleString('ru-RU') : '—'}</b>${p.metrics.rps > 0 ? ' <span class="hint-inline">/с</span>' : ''}</td>
                 <td>${abChip(p.ab_status)}</td>
-                <td>${p.media_rules ? '<span class="chip media">📢 есть</span>' : '<span class="chip" style="opacity:0.4;">—</span>'}</td>
+                <td>${p.media_rules ? '<span class="chip media">📢</span>' : '<span class="chip" style="opacity:0.4;">—</span>'}</td>
                 <td>${statusChip(p.status)}</td>
               </tr>
             `).join('') : `<tr><td colspan="8"><div class="empty"><div class="big">🔍</div>Ничего не найдено</div></td></tr>`}
@@ -772,7 +762,7 @@ function renderDetail() {
               <span class="chip outline">👤 ${escapeHtml(p.owner)}</span>
               ${sourceChip(p.source)}
               ${personalizationChip(p.personalization)}
-              ${hasMedia ? '<span class="chip media">📢 Медиа-правила в реестре</span>' : ''}
+              ${hasMedia ? '<span class="chip media">📢 встраивание настроено</span>' : ''}
               ${abChip(p.ab_status)}
             </div>
             ${p.description ? `<div class="subtle" style="margin-top:10px;">${escapeHtml(p.description)}</div>` : ''}
@@ -790,7 +780,7 @@ function renderDetail() {
         <div class="tab ${STATE.detailTab==='overview'?'active':''}" data-tab="overview">Параметры</div>
         <div class="tab ${STATE.detailTab==='analytics'?'active':''}" data-tab="analytics">Мониторинг</div>
         <div class="tab ${STATE.detailTab==='ab'?'active':''}" data-tab="ab">A/B-статус</div>
-        ${hasMedia ? `<div class="tab tab-media ${STATE.detailTab==='media'?'active':''}" data-tab="media">📢 Медиа-правила ✏️</div>` : ''}
+        ${hasMedia ? `<div class="tab tab-media ${STATE.detailTab==='media'?'active':''}" data-tab="media">⚙️ Правила встраивания</div>` : ''}
         <div class="tab ${STATE.detailTab==='config'?'active':''}" data-tab="config">JSON конфиг</div>
       </div>
       <div class="card-pad" id="tab-body"></div>
@@ -1050,39 +1040,27 @@ function renderMediaTab(body) {
         </div>
       </div>
 
-      <!-- Метрики (read-only Grafana) -->
+      <!-- Метрики слотов (упрощённо) -->
       <div class="card card-pad">
-        <div class="media-section-title">📊 Метрики плейсмента (Grafana · только чтение)</div>
-        <div class="metrics-grid">
-          <div class="metric-tile"><div class="mt-label">CTR</div><div class="mt-value" style="color:var(--media);">8,4%</div><div class="mt-hint">рекламные слоты</div></div>
-          <div class="metric-tile"><div class="mt-label">Fill rate</div><div class="mt-value" style="color:var(--green);">85%</div><div class="mt-hint">реальный баннер</div></div>
-          <div class="metric-tile"><div class="mt-label">Stub rate</div><div class="mt-value">12%</div><div class="mt-hint">показана заглушка</div></div>
-          <div class="metric-tile"><div class="mt-label">Revenue / 1k сессий</div><div class="mt-value" style="color:var(--green);">₽124</div><div class="mt-hint">атрибутировано медиа</div></div>
-          <div class="metric-tile"><div class="mt-label">Viewability</div><div class="mt-value">78%</div><div class="mt-hint">баннер в зоне видимости</div></div>
-        </div>
-        <div class="subtle" style="margin-top:12px;">Метрики обновляются каждые 5 минут. Данные из <code>label: placement_id=main.endless_recommendation</code> в Grafana/Prometheus.</div>
-      </div>
-
-      <!-- Схема работы -->
-      <div class="card card-pad">
-        <div class="media-section-title">🏗️ Как это работает на горячем пути</div>
-        <div class="int-flow">
-          <div class="int-node"><div class="n-title">МП ТС5</div><div class="n-sub">запрос ленты</div></div>
-          <div class="int-arrow"><div>→</div></div>
-          <div class="int-node" style="border-color:var(--purple); background:var(--purple-soft);">
-            <div class="n-title" style="color:var(--purple);">MS Catalog</div>
-            <div class="n-sub">asyncio.gather</div>
+        <div class="media-section-title">📊 Ключевые показатели встраивания</div>
+        <div class="grid-3" style="gap:10px;">
+          <div class="metric-tile">
+            <div class="mt-label">Кликабельность баннеров</div>
+            <div class="mt-value" style="color:var(--media);">8,4%</div>
+            <div class="mt-hint">доля кликов от показов рекламных слотов</div>
           </div>
-          <div class="int-arrow"><div>→</div><div class="arrow-label">параллельно</div></div>
-          <div class="int-node"><div class="n-title">RecSys</div><div class="n-sub">товары</div></div>
+          <div class="metric-tile">
+            <div class="mt-label">Заполненность слотов</div>
+            <div class="mt-value" style="color:var(--green);">85%</div>
+            <div class="mt-hint">доля слотов, куда AdPlatform вернул реальный баннер</div>
+          </div>
+          <div class="metric-tile">
+            <div class="mt-label">Заглушки</div>
+            <div class="mt-value">12%</div>
+            <div class="mt-hint">слоты, где показана заглушка вместо баннера</div>
+          </div>
         </div>
-        <div class="int-flow" style="margin-top:6px; padding-left:160px;">
-          <div class="int-arrow"><div>→</div></div>
-          <div class="int-node media-node"><div class="n-title">AdPlatform</div><div class="n-sub">баннеры X5 Media<br>timeout 100ms</div></div>
-          <div class="int-arrow"><div>→</div></div>
-          <div class="int-node registry"><div class="n-title">📋 Реестр (кэш)</div><div class="n-sub">правила позиций<br>обновл. 1 раз/ч</div></div>
-        </div>
-        <div class="subtle" style="margin-top:12px;">Реестр <b>не участвует</b> в каждом запросе. MS Catalog кэширует правила и читает их из Redis. Добавленная latency = 0 мс на горячем пути.</div>
+        <div class="subtle" style="margin-top:12px;">Источник: Grafana · обновляется каждые 5 минут.</div>
       </div>
     </div>
   `;
@@ -1127,8 +1105,8 @@ function renderMediaOverview() {
   root.appendChild(el(`
     <div class="stack">
       <div>
-        <h2 class="h2">Медиа-плейсменты</h2>
-        <div class="subtle">Плейсменты с настроенными правилами встраивания медиа-объектов X5 Media. Правила хранятся в реестре и редактируются командой Каталог.</div>
+        <h2 class="h2">Плейсменты с медиа-встраиванием</h2>
+        <div class="subtle">Плейсменты, в которых настроено встраивание стороннего контента. Правила позиционирования хранятся в реестре и редактируются командой Каталог.</div>
       </div>
 
       <div class="banner blue">
@@ -1153,13 +1131,13 @@ function renderMediaOverview() {
               <div class="pid" style="font-family:ui-monospace,monospace; color:var(--text-muted); font-size:12px; margin-top:2px;">${p.id}</div>
               <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
                 ${statusChip(p.status)}
-                <span class="chip media">📢 Медиа-правила</span>
+                <span class="chip media">⚙️ правила встраивания</span>
                 <span class="chip outline">slot_id: ${escapeHtml(MEDIA_FORM.ad_platform_slot_id)}</span>
                 <span class="chip">freq: каждая ${MEDIA_FORM.slot_frequency}-я плитка</span>
                 <span class="chip green">fill_rate 85%</span>
               </div>
             </div>
-            <button class="btn" style="flex-shrink:0;">📢 Открыть правила →</button>
+            <button class="btn" style="flex-shrink:0;" onclick="navigate('placements', this.closest('[data-id]').dataset.id, 'media'); event.stopPropagation();">Открыть правила →</button>
           </div>
           <div style="background:var(--surface-2); border-top:1px solid var(--border); padding:10px 20px; display:flex; gap:24px;">
             ${Object.entries(MEDIA_TOGGLES).map(([k,v]) => `
@@ -1205,8 +1183,14 @@ function renderMap() {
   root.innerHTML = '';
   root.appendChild(el(`
     <div class="stack">
-      <div><h2 class="h2">Карта плейсментов по экранам</h2><div class="subtle">Голубой фон — плейсменты с медиа-правилами.</div></div>
+      <div><h2 class="h2">Карта плейсментов по экранам</h2><div class="subtle">Все зарегистрированные товарные подборки МП ТС5, сгруппированные по экранам.</div></div>
       <div class="map-grid" id="map-grid"></div>
+      <div style="display:flex; gap:20px; flex-wrap:wrap; padding:10px 14px; background:var(--surface); border:1px solid var(--border); border-radius:8px; font-size:12.5px; color:var(--text-muted);">
+        <span style="font-weight:600; color:var(--text);">Легенда:</span>
+        <span style="display:flex; align-items:center; gap:6px;">📢 <span>— встраивание стороннего контента настроено (правила в реестре)</span></span>
+        <span style="display:flex; align-items:center; gap:6px;">🎯 <span>— персонализированная подборка (RecSys строит ленту под конкретного пользователя)</span></span>
+        <span style="display:flex; align-items:center; gap:6px;"><span style="border:1px solid #93c5fd; background:#eff6ff; border-radius:5px; padding:1px 6px;">голубая рамка</span><span>— плейсменты с настроенным встраиванием</span></span>
+      </div>
     </div>
   `));
   const grid = document.getElementById('map-grid');
