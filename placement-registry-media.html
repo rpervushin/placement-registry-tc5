@@ -338,7 +338,17 @@ function showToast(msg, color = '#15803d') {
 // Состояние тоглов медиа-слотов (редактируемое в прототипе)
 const MEDIA_TOGGLES = { slot_5: true, slot_10: true, slot_15: true, slot_20: false, slot_25: true };
 // Редактируемые правила (MVP — в памяти)
-const MEDIA_FORM = { slot_frequency: 5, max_per_scroll: 1, repeat_min_interval: 10, stub_required_count: 5, ad_platform_timeout_ms: 100, ad_platform_slot_id: 'main_endless_rec_v1', fallback_behavior: 'fill_with_product' };
+const MEDIA_FORM = { slot_frequency: 5, max_per_scroll: 1, repeat_min_interval: 10, stub_required_count: 5, ad_platform_timeout_ms: 100, ad_platform_slot_id: 'main_endless_rec_v1', fallback_behavior: 'fill_with_product', allowed_content_types: ['media_banner', 'product_card', 'stub_banner'] };
+// Каталог доступных типов встраиваемых объектов
+const CONTENT_TYPE_CATALOG = [
+  { key: 'media_banner', label: 'Медиабаннер',    desc: 'Рекламный баннер-изображение или анимация от X5 Media через AdSDK. Встраивается как отдельная плитка в сетку товаров.', icon: '🖼️', beta: false },
+  { key: 'product_card', label: 'Карточка товара', desc: 'Спонсированная карточка конкретного SKU, продвигаемого X5 Media. Визуально — обычная товарная плитка со значком «реклама».', icon: '🛒', beta: false },
+  { key: 'video_banner', label: 'Видео-баннер',   desc: 'Короткое видео-объявление (автовоспроизведение, без звука). Формат в разработке — доступен в бета-режиме.', icon: '▶️', beta: true },
+];
+// Разрешённые типы для текущего плейсмента (редактируются)
+const ALLOWED_TYPES = { media_banner: true, product_card: true, video_banner: false };
+// Предпочтительный тип объекта для каждого слота
+const SLOT_PREF_TYPE = { slot_5: 'media_banner', slot_10: 'media_banner', slot_15: 'product_card', slot_20: 'media_banner', slot_25: 'media_banner' };
 
 const PLACEMENTS = [
   {
@@ -898,6 +908,8 @@ function renderDetail() {
         ad_platform_timeout_ms: MEDIA_FORM.ad_platform_timeout_ms,
         ad_platform_slot_id: MEDIA_FORM.ad_platform_slot_id,
         fallback_behavior: MEDIA_FORM.fallback_behavior,
+        allowed_content_types: [...Object.entries(ALLOWED_TYPES).filter(([,v])=>v).map(([k])=>k), 'stub_banner'],
+        slot_preferred_types: { ...SLOT_PREF_TYPE },
         feature_toggles: { ...MEDIA_TOGGLES },
       };
     }
@@ -921,7 +933,7 @@ function renderDetail() {
 }
 
 /* =============================================================
-   ВКЛАДКА МЕДИА-ПРАВИЛА
+   ВКЛАДКА ПРАВИЛА ВСТРАИВАНИЯ
    ============================================================= */
 function renderMediaTab(body) {
   const slots = [
@@ -932,14 +944,57 @@ function renderMediaTab(body) {
     { key: 'slot_25', pos: 25, fill_rate: 81, ctr: 1.8 },
   ];
 
+  function getEnabledTypes() {
+    return CONTENT_TYPE_CATALOG.filter(t => ALLOWED_TYPES[t.key]);
+  }
+
+  function typeSelectHtml(slotKey) {
+    const enabled = getEnabledTypes();
+    if (!enabled.length) return '<span class="hint-inline">нет активных типов</span>';
+    return `<select class="form-input slot-type-select" data-key="${slotKey}" style="font-size:12.5px; padding:4px 6px; width:auto;">
+      ${enabled.map(t => `<option value="${t.key}" ${SLOT_PREF_TYPE[slotKey]===t.key?'selected':''}>${t.icon} ${t.label}</option>`).join('')}
+    </select>`;
+  }
+
+  function typeCardHtml(t) {
+    const on = ALLOWED_TYPES[t.key];
+    return `
+      <div class="type-card" id="tc-${t.key}" style="border:1px solid ${on?'var(--brand)':'var(--border)'}; border-radius:8px; padding:12px 16px; background:${on?'var(--brand-soft)':'var(--surface)'}; display:flex; align-items:center; gap:14px; transition:background 0.2s,border 0.2s;">
+        <label class="toggle" title="Разрешить тип ${t.label}">
+          <input type="checkbox" class="type-toggle" data-key="${t.key}" ${on?'checked':''}>
+          <span class="toggle-slider"></span>
+        </label>
+        <span style="font-size:22px; flex-shrink:0; line-height:1;">${t.icon}</span>
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:600; font-size:13.5px; display:flex; align-items:center; gap:7px; flex-wrap:wrap;">
+            ${escapeHtml(t.label)}
+            ${t.beta ? '<span class="chip yellow" style="font-size:11px; padding:1px 7px;">бета</span>' : ''}
+            <span class="type-status-chip chip ${on?'green':''}" id="tc-chip-${t.key}" style="font-size:11px; padding:1px 7px;">${on?'разрешён':'отключён'}</span>
+          </div>
+          <div style="color:var(--text-muted); font-size:12.5px; margin-top:3px; line-height:1.4;">${escapeHtml(t.desc)}</div>
+        </div>
+      </div>`;
+  }
+
   body.innerHTML = `
     <div class="stack">
-      <!-- Баннер: это правила реестра -->
-      <div class="banner blue">
-        <span class="icon">✏️</span>
-        <div>
-          <div class="title">Правила встраивания хранятся в реестре</div>
-          <div class="desc">Это единственное место, где задаются правила позиционирования медиа-объектов. X5 Media предоставляет контент через AdPlatform — реестр определяет где и как он встраивается. Изменения вступают в силу через ~1 час (кэш MS Catalog).</div>
+
+      <!-- Типы встраиваемых объектов -->
+      <div class="card card-pad">
+        <div class="media-section-title">📦 Разрешённые типы встраиваемых объектов</div>
+        <div class="subtle" style="margin-bottom:14px;">Выберите, какие типы объектов X5 Media может встраивать в этот плейсмент. Для каждого слота дополнительно задаётся предпочтительный тип.</div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${CONTENT_TYPE_CATALOG.map(t => typeCardHtml(t)).join('')}
+          <div style="border:1px solid var(--border); border-radius:8px; padding:12px 16px; background:var(--gray-soft); display:flex; align-items:center; gap:14px; opacity:0.65;">
+            <label class="toggle"><input type="checkbox" checked disabled><span class="toggle-slider"></span></label>
+            <span style="font-size:22px; flex-shrink:0; line-height:1;">⬜</span>
+            <div>
+              <div style="font-weight:600; font-size:13.5px; display:flex; align-items:center; gap:7px;">
+                Заглушка <span class="chip" style="font-size:11px; padding:1px 7px;">всегда активна</span>
+              </div>
+              <div style="color:var(--text-muted); font-size:12.5px; margin-top:3px;">Показывается автоматически при отсутствии ответа от AdPlatform — fallback, не редактируется.</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -953,43 +1008,41 @@ function renderMediaTab(body) {
             <span class="form-hint">плитка 5, 10, 15…</span>
           </div>
           <div class="form-row">
-            <span class="form-label">Максимум баннеров на один скролл</span>
+            <span class="form-label">Максимум объектов на один скролл</span>
             <input class="form-input" type="number" id="mf-max_per_scroll" min="1" max="5" value="${MEDIA_FORM.max_per_scroll}">
           </div>
           <div class="form-row">
             <span class="form-label">Минимальный интервал повтора (плиток)</span>
             <input class="form-input" type="number" id="mf-repeat_min_interval" min="1" max="50" value="${MEDIA_FORM.repeat_min_interval}">
-            <span class="form-hint">баннер не повторяется раньше чем через N плиток</span>
+            <span class="form-hint">объект не повторяется раньше чем через N плиток</span>
           </div>
           <div class="form-row">
             <span class="form-label">Позиций под заглушки (первые слоты)</span>
             <input class="form-input" type="number" id="mf-stub_required_count" min="0" max="10" value="${MEDIA_FORM.stub_required_count}">
-            <span class="form-hint">если AdPlatform не вернул баннер</span>
+            <span class="form-hint">если AdPlatform не вернул объект вовремя</span>
           </div>
         </div>
-
         <div class="media-section-title" style="margin-top:8px;">🔌 AdPlatform (X5 Media AdSDK)</div>
         <div class="media-section">
           <div class="form-row">
             <span class="form-label">slot_id в AdSDK</span>
             <input class="form-input wide" type="text" id="mf-ad_platform_slot_id" value="${escapeHtml(MEDIA_FORM.ad_platform_slot_id)}">
-            <span class="form-hint">передаётся в AdSDK при запросе баннера</span>
+            <span class="form-hint">передаётся в AdSDK при запросе объекта</span>
           </div>
           <div class="form-row">
             <span class="form-label">Таймаут AdPlatform (мс)</span>
             <input class="form-input" type="number" id="mf-ad_platform_timeout_ms" min="50" max="500" value="${MEDIA_FORM.ad_platform_timeout_ms}">
-            <span class="form-hint">при превышении — fallback</span>
+            <span class="form-hint">при превышении — fallback (заглушка или товар)</span>
           </div>
           <div class="form-row">
             <span class="form-label">Fallback-поведение</span>
             <select class="form-input wide" id="mf-fallback_behavior">
               <option value="fill_with_product" ${MEDIA_FORM.fallback_behavior==='fill_with_product'?'selected':''}>Заменить товаром (рекомендуется)</option>
-              <option value="stub_banner" ${MEDIA_FORM.fallback_behavior==='stub_banner'?'selected':''}>Показать заглушку-баннер</option>
-              <option value="collapse" ${MEDIA_FORM.fallback_behavior==='collapse'?'selected':''}>Схлопнуть позицию</option>
+              <option value="stub_banner"        ${MEDIA_FORM.fallback_behavior==='stub_banner'?'selected':''}>Показать заглушку</option>
+              <option value="collapse"           ${MEDIA_FORM.fallback_behavior==='collapse'?'selected':''}>Схлопнуть позицию</option>
             </select>
           </div>
         </div>
-
         <div style="display:flex; gap:10px; padding-top:4px;">
           <button class="btn btn-primary" id="btn-save-media">💾 Сохранить правила</button>
           <button class="btn" id="btn-cancel-media">Отмена</button>
@@ -997,21 +1050,21 @@ function renderMediaTab(body) {
         </div>
       </div>
 
-      <!-- Таблица слотов с тоглами -->
+      <!-- Таблица слотов -->
       <div class="card">
         <div style="padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px;">
-          <div class="media-section-title" style="margin:0;">🎛️ Слоты — включение/отключение</div>
-          <span class="hint-inline">Управляйте каждым слотом отдельно. Изменение — через ~1 час.</span>
+          <div class="media-section-title" style="margin:0;">🎛️ Слоты — тип объекта и управление</div>
+          <span class="hint-inline">Выберите предпочтительный тип для каждого слота и управляйте включением.</span>
         </div>
         <table class="slot-table">
           <thead>
             <tr>
               <th>Позиция (2 в ряд)</th>
               <th>Позиция (3 в ряд)</th>
-              <th>Тип контента</th>
+              <th>Предпочтительный тип</th>
               <th>Статус</th>
-              <th>Fill rate</th>
-              <th>CTR</th>
+              <th>Заполненность</th>
+              <th>Кликабельность</th>
             </tr>
           </thead>
           <tbody id="slot-tbody">
@@ -1019,7 +1072,7 @@ function renderMediaTab(body) {
               <tr class="${MEDIA_TOGGLES[s.key] ? '' : 'slot-off'}" id="slot-row-${s.key}">
                 <td><b>${s.pos}</b></td>
                 <td><span class="hint-inline">${Math.round(s.pos * 1.4)}</span></td>
-                <td><span class="chip">media_banner</span> <span class="chip" style="opacity:0.55;">stub_banner</span></td>
+                <td id="slot-type-cell-${s.key}">${typeSelectHtml(s.key)}</td>
                 <td>
                   <div class="toggle-wrap">
                     <label class="toggle" title="Включить/выключить слот ${s.pos}">
@@ -1036,28 +1089,28 @@ function renderMediaTab(body) {
           </tbody>
         </table>
         <div style="padding:10px 14px; background:var(--surface-2); font-size:12px; color:var(--text-dim); border-top:1px solid var(--border);">
-          Позиции рассчитаны для 2 товаров в ряд. При 3 в ряд — умножается на 1.4. Заглушки (stub) отображаются при отсутствии баннера от AdPlatform.
+          Позиции рассчитаны для 2 товаров в ряд. При 3 в ряд — умножается на 1.4. Заглушка показывается при отсутствии ответа от AdPlatform в отведённый таймаут.
         </div>
       </div>
 
-      <!-- Метрики слотов (упрощённо) -->
+      <!-- Метрики -->
       <div class="card card-pad">
         <div class="media-section-title">📊 Ключевые показатели встраивания</div>
         <div class="grid-3" style="gap:10px;">
           <div class="metric-tile">
-            <div class="mt-label">Кликабельность баннеров</div>
+            <div class="mt-label">Кликабельность</div>
             <div class="mt-value" style="color:var(--media);">8,4%</div>
             <div class="mt-hint">доля кликов от показов рекламных слотов</div>
           </div>
           <div class="metric-tile">
             <div class="mt-label">Заполненность слотов</div>
             <div class="mt-value" style="color:var(--green);">85%</div>
-            <div class="mt-hint">доля слотов, куда AdPlatform вернул реальный баннер</div>
+            <div class="mt-hint">доля слотов с реальным объектом от AdPlatform</div>
           </div>
           <div class="metric-tile">
             <div class="mt-label">Заглушки</div>
             <div class="mt-value">12%</div>
-            <div class="mt-hint">слоты, где показана заглушка вместо баннера</div>
+            <div class="mt-hint">слоты, где показана заглушка вместо объекта</div>
           </div>
         </div>
         <div class="subtle" style="margin-top:12px;">Источник: Grafana · обновляется каждые 5 минут.</div>
@@ -1065,22 +1118,62 @@ function renderMediaTab(body) {
     </div>
   `;
 
-  // Сохранение формы
+  // ── Сохранение ──
   body.querySelector('#btn-save-media').addEventListener('click', () => {
-    MEDIA_FORM.slot_frequency       = +body.querySelector('#mf-slot_frequency').value;
-    MEDIA_FORM.max_per_scroll       = +body.querySelector('#mf-max_per_scroll').value;
-    MEDIA_FORM.repeat_min_interval  = +body.querySelector('#mf-repeat_min_interval').value;
-    MEDIA_FORM.stub_required_count  = +body.querySelector('#mf-stub_required_count').value;
+    MEDIA_FORM.slot_frequency         = +body.querySelector('#mf-slot_frequency').value;
+    MEDIA_FORM.max_per_scroll         = +body.querySelector('#mf-max_per_scroll').value;
+    MEDIA_FORM.repeat_min_interval    = +body.querySelector('#mf-repeat_min_interval').value;
+    MEDIA_FORM.stub_required_count    = +body.querySelector('#mf-stub_required_count').value;
     MEDIA_FORM.ad_platform_timeout_ms = +body.querySelector('#mf-ad_platform_timeout_ms').value;
-    MEDIA_FORM.ad_platform_slot_id  = body.querySelector('#mf-ad_platform_slot_id').value;
-    MEDIA_FORM.fallback_behavior    = body.querySelector('#mf-fallback_behavior').value;
+    MEDIA_FORM.ad_platform_slot_id    = body.querySelector('#mf-ad_platform_slot_id').value;
+    MEDIA_FORM.fallback_behavior      = body.querySelector('#mf-fallback_behavior').value;
+    MEDIA_FORM.allowed_content_types  = [...Object.entries(ALLOWED_TYPES).filter(([,v])=>v).map(([k])=>k), 'stub_banner'];
     showToast('✅ Правила сохранены · вступят в силу через ~1 час');
   });
   body.querySelector('#btn-cancel-media').addEventListener('click', () => {
     navigate('placements', STATE.detailId, 'media');
   });
 
-  // Тоглы слотов
+  // ── Типы объектов ──
+  body.querySelectorAll('.type-toggle').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const key = cb.dataset.key;
+      ALLOWED_TYPES[key] = cb.checked;
+      const card = body.querySelector(`#tc-${key}`);
+      if (card) {
+        card.style.border = `1px solid ${cb.checked ? 'var(--brand)' : 'var(--border)'}`;
+        card.style.background = cb.checked ? 'var(--brand-soft)' : 'var(--surface)';
+      }
+      const chip = body.querySelector(`#tc-chip-${key}`);
+      if (chip) {
+        chip.className = `chip ${cb.checked ? 'green' : ''} type-status-chip`;
+        chip.style.cssText = 'font-size:11px; padding:1px 7px;';
+        chip.textContent = cb.checked ? 'разрешён' : 'отключён';
+      }
+      // Обновляем дропдауны слотов
+      ['slot_5','slot_10','slot_15','slot_20','slot_25'].forEach(sk => {
+        const cell = body.querySelector(`#slot-type-cell-${sk}`);
+        if (!cell) return;
+        // Сохраняем выбранный тип если он ещё доступен
+        if (SLOT_PREF_TYPE[sk] === key && !cb.checked) {
+          const first = getEnabledTypes()[0];
+          SLOT_PREF_TYPE[sk] = first ? first.key : 'media_banner';
+        }
+        cell.innerHTML = typeSelectHtml(sk);
+        const sel = cell.querySelector('.slot-type-select');
+        if (sel) sel.addEventListener('change', e => { SLOT_PREF_TYPE[e.target.dataset.key] = e.target.value; });
+      });
+      const t = CONTENT_TYPE_CATALOG.find(x => x.key === key);
+      showToast(cb.checked ? `✅ Тип «${t?.label || key}» разрешён` : `⛔ Тип «${t?.label || key}» отключён`, cb.checked ? '#15803d' : '#6941c6');
+    });
+  });
+
+  // ── Тип объекта per slot ──
+  body.querySelectorAll('.slot-type-select').forEach(sel => {
+    sel.addEventListener('change', e => { SLOT_PREF_TYPE[e.target.dataset.key] = e.target.value; });
+  });
+
+  // ── Тоглы слотов ──
   body.querySelectorAll('.slot-toggle').forEach(cb => {
     cb.addEventListener('change', () => {
       const key = cb.dataset.key;
