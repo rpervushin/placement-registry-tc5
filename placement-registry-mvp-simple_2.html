@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Реестр плейсментов — упрощённый MVP · МП ТС5</title>
+<style>
+  :root {
+    --bg: #f4f4f2;
+    --surface: #ffffff;
+    --surface-2: #fafaf9;
+    --border: #dcdcd8;
+    --border-strong: #c3c3be;
+    --text: #1c1e1c;
+    --text-muted: #6b6f6b;
+    --text-dim: #9a9d97;
+    --accent: #5FAF2D;
+    --accent-soft: #eaf5e2;
+    --accent-dark: #2f6e18;
+    --radius: 3px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5;
+  }
+  .top-accent-bar { height: 3px; background: var(--accent); }
+  header.topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 28px; display: flex; align-items: center; gap: 14px;
+  }
+  .brand-logo { flex: 0 0 auto; width: 32px; height: 32px; background: #000; border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+  header.topbar .titles { display: flex; align-items: baseline; gap: 14px; }
+  header.topbar h1 { margin: 0; font-size: 17px; font-weight: 600; }
+  header.topbar .sub { color: var(--text-muted); font-size: 13px; }
+  header.topbar .tag {
+    margin-left: auto; font-size: 11px; color: var(--accent-dark);
+    border: 1px solid var(--accent); background: var(--accent-soft); border-radius: var(--radius); padding: 3px 8px;
+  }
+
+  .functions-strip {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--accent-soft);
+  }
+  .functions-strip .fn {
+    flex: 1; padding: 10px 20px; font-size: 12.5px; color: var(--text-muted);
+    border-right: 1px solid var(--border);
+  }
+  .functions-strip .fn:last-child { border-right: none; }
+  .functions-strip .fn b { color: var(--text); font-weight: 600; }
+  .functions-strip .fn .n {
+    display: inline-block; width: 16px; height: 16px; line-height: 16px; text-align: center;
+    border: 1px solid var(--accent); background: var(--surface); border-radius: 50%; font-size: 10.5px; margin-right: 6px; color: var(--accent-dark); font-weight: 600;
+  }
+
+  .layout { display: grid; grid-template-columns: 460px 1fr; min-height: calc(100vh - 96px); }
+  .list-pane { border-right: 1px solid var(--border); padding: 20px 22px; }
+  .list-pane h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin: 0 0 12px; font-weight: 600; }
+
+  table.reg { width: 100%; border-collapse: collapse; }
+  table.reg th {
+    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .03em;
+    color: var(--text-muted); font-weight: 600; padding: 7px 8px; border-bottom: 1px solid var(--border);
+    background: var(--accent-soft);
+  }
+  table.reg td { padding: 10px 8px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+  table.reg tbody tr { cursor: pointer; }
+  table.reg tbody tr:hover td { background: var(--surface-2); }
+  table.reg tbody tr.active td { background: var(--accent-soft); border-left: 2px solid var(--accent); }
+  table.reg .pid { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--text-muted); display: block; margin-top: 2px; }
+  .chip {
+    display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: var(--radius);
+    border: 1px solid var(--border-strong); color: var(--text-muted); white-space: nowrap;
+  }
+  .chip.on { border-color: var(--accent); color: var(--accent-dark); background: var(--accent-soft); font-weight: 600; }
+
+  .detail-pane { padding: 24px 30px; max-width: 760px; }
+  .placeholder { color: var(--text-dim); font-size: 13.5px; padding-top: 40px; text-align: center; }
+
+  .block { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); margin-bottom: 18px; }
+  .block-head {
+    padding: 12px 18px; border-bottom: 1px solid var(--border); background: var(--accent-soft);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .block-head .n {
+    display: inline-block; width: 18px; height: 18px; line-height: 18px; text-align: center;
+    border: 1px solid var(--accent); background: var(--surface); border-radius: 50%; font-size: 11px; color: var(--accent-dark); font-weight: 600; flex: 0 0 auto;
+  }
+  .block-head h3 { margin: 0; font-size: 13.5px; font-weight: 600; }
+  .block-head .hint { margin-left: auto; font-size: 11.5px; color: var(--text-dim); }
+  .block-body { padding: 16px 18px; }
+
+  .dl { display: grid; grid-template-columns: 140px 1fr; gap: 8px 14px; font-size: 13px; }
+  .dl dt { color: var(--text-muted); }
+  .dl dd { margin: 0; }
+
+  .empty-note { font-size: 13px; color: var(--text-muted); }
+
+  .stakeholder-row {
+    display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 6px; background: var(--surface);
+  }
+  .stakeholder-row[data-first="true"] { border-left: 2px solid var(--accent); background: var(--accent-soft); }
+  .stakeholder-row .badge {
+    width: 26px; height: 26px; border: 1px solid var(--border-strong); border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--text-muted); flex: 0 0 auto; background: var(--surface);
+  }
+  .stakeholder-row[data-first="true"] .badge { border-color: var(--accent); color: var(--accent-dark); }
+  .stakeholder-row .name { font-weight: 500; font-size: 13px; }
+  .stakeholder-row .fallback { font-size: 11.5px; color: var(--text-dim); margin-top: 1px; }
+  .stakeholder-row .order-btns { margin-left: auto; display: flex; gap: 4px; }
+  .stakeholder-row .order-btns button {
+    width: 22px; height: 22px; border: 1px solid var(--border-strong); background: var(--surface);
+    border-radius: var(--radius); cursor: pointer; font-size: 11px; color: var(--text-muted); padding: 0;
+  }
+  .stakeholder-row .order-btns button:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-dark); }
+  .stakeholder-row .order-btns button:disabled { opacity: .35; cursor: default; }
+  .stakeholder-row .prio { font-size: 11px; color: var(--text-dim); width: 16px; text-align: center; flex: 0 0 auto; }
+
+  .type-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 6px;
+  }
+  .type-row .tname { font-size: 13px; flex: 1; }
+  .type-row .towner { font-size: 11px; color: var(--text-dim); }
+  .type-row .freq { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-muted); }
+  .type-row .freq input {
+    width: 40px; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 3px 5px; font-size: 12px; text-align: center;
+  }
+
+  .toggle { position: relative; display: inline-block; width: 34px; height: 18px; flex: 0 0 auto; cursor: pointer; }
+  .toggle input { display: none; }
+  .toggle .track {
+    position: absolute; inset: 0; background: var(--border-strong); border-radius: 9px;
+  }
+  .toggle .knob {
+    position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #fff; border-radius: 50%;
+    border: 1px solid var(--border-strong);
+  }
+  .toggle input:checked + .track { background: var(--accent); border-color: var(--accent); }
+  .toggle input:checked ~ .knob { left: 18px; border-color: var(--accent); }
+
+  .diversity-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; font-size: 13px; }
+  .diversity-row .label { color: var(--text); }
+  .diversity-row .sub { display: block; font-size: 11.5px; color: var(--text-dim); margin-top: 1px; }
+
+  pre.json {
+    background: var(--surface-2); border: 1px solid var(--border); border-top: 2px solid var(--accent); border-radius: var(--radius);
+    padding: 12px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+    color: var(--text); overflow-x: auto; margin: 0;
+  }
+  .sync-note {
+    font-size: 12px; color: var(--text-muted); margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);
+  }
+
+  .view-tabs { display: flex; gap: 2px; padding: 10px 28px 0; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .vtab {
+    padding: 9px 16px; font-size: 13px; color: var(--text-muted); cursor: pointer; border: 1px solid transparent;
+    border-bottom: none; border-radius: var(--radius) var(--radius) 0 0; margin-bottom: -1px;
+  }
+  .vtab:hover { color: var(--text); }
+  .vtab.active {
+    color: var(--accent-dark); font-weight: 600; background: var(--surface);
+    border-color: var(--border); border-bottom: 1px solid var(--surface);
+  }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .contract-pane { padding: 24px 28px; max-width: 900px; }
+  .contract-endpoint {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; color: var(--accent-dark);
+    background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius);
+    padding: 6px 10px; display: inline-block; margin-bottom: 10px;
+  }
+  .contract-desc { font-size: 13px; color: var(--text-muted); margin: 0 0 16px; max-width: 640px; }
+</style>
+</head>
+<body>
+
+<div class="top-accent-bar"></div>
+<header class="topbar">
+  <div class="brand-logo" aria-label="X5">
+    <svg width="26" height="26" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M33 4 C36 4 37 7 36.5 11 C34.5 25 23 36 9 36 C5 36 3 33.5 3.5 29 C5 16 16 4 33 4 Z" fill="#5FAF2D"/>
+      <path d="M11 31 C14 22 21 13 31 7" stroke="rgba(0,0,0,0.18)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      <text x="20" y="33" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="900" fill="#0a0a0a" text-anchor="middle" style="letter-spacing:-0.5px">X5</text>
+    </svg>
+  </div>
+  <div class="titles">
+    <h1>Реестр плейсментов</h1>
+    <span class="sub">МП ТС5 — упрощённый прототип</span>
+  </div>
+  <span class="tag">v0.6 · MVP</span>
+</header>
+
+<div class="functions-strip">
+  <div class="fn"><span class="n">1</span><b>Учёт плейсментов</b> — единый список рекомендательных плейсментов и их источников</div>
+  <div class="fn"><span class="n">2</span><b>Правила встраивания</b> — приоритет стейкхолдеров, типы объектов, частота, разнообразие</div>
+  <div class="fn"><span class="n">3</span><b>Передача в Каталог</b> — правила, которые реестр отдаёт MS Catalog</div>
+</div>
+
+<div class="view-tabs">
+  <div class="vtab active" data-view="registry">Реестр</div>
+  <div class="vtab" data-view="contract">Пример контракта · JSON</div>
+</div>
+
+<div class="view active" id="view-registry">
+  <div class="layout">
+    <div class="list-pane">
+      <h2>Плейсменты <span id="count" style="color:var(--text-dim); font-weight:400;"></span></h2>
+      <table class="reg">
+        <thead>
+          <tr><th>Плейсмент</th><th>Источник</th><th>Встраивание</th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="detail-pane" id="detail">
+      <div class="placeholder">Выберите плейсмент слева</div>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-contract">
+  <div class="contract-pane">
+    <div class="contract-endpoint">GET /internal/registry/sync</div>
+    <p class="contract-desc">Ответ, который MS Catalog получает при плановой синхронизации (раз в час) и кэширует у себя: настройки по каждой полке (плейсменту) — базовые параметры и, где заданы, правила встраивания объектов стейкхолдеров. Плейсменты без правил передаются с <code>embedding_rules: null</code>.</p>
+    <pre class="json" id="contractJson"></pre>
+  </div>
+</div>
+
+<script>
+// ── Данные: учёт плейсментов (функция 1) ──────────────────────────
+const PLACEMENTS = [
+  { id: 'main.endless_recommendation', title: 'Главная · Бесконечные рекомендации', screen: 'Главная', owner: 'Каталог', source: 'RecSys', status: 'активен', media_rules: true },
+  { id: 'home.recsys.foryou', title: 'Главная · Подобрали для вас', screen: 'Главная', owner: 'Каталог', source: 'RecSys', status: 'активен', media_rules: false },
+  { id: 'cart.recsys.addon', title: 'Корзина · Рекомендации к заказу', screen: 'Корзина', owner: 'Каталог', source: 'RecSys', status: 'активен', media_rules: true },
+  { id: 'home.media.hidden', title: 'Главная · Скрытая подборка X5 Media', screen: 'Главная', owner: 'Каталог', source: 'pBase', status: 'активен', media_rules: false },
+  { id: 'home.catalog.discounts', title: 'Главная · Акции и скидки', screen: 'Главная', owner: 'Trade-Promo', source: 'Catalog', status: 'активен', media_rules: false },
+  { id: 'category.recsys.similar', title: 'Категория · Похожие товары', screen: 'Категория', owner: 'Каталог', source: 'RecSys', status: 'активен', media_rules: false },
+];
+
+// ── Данные: правила встраивания (функция 2), только для media_rules ──
+const STAKEHOLDERS_DEF = {
+  x5_media:  { name: 'X5 Media (реклама)', letter: 'Р' },
+  marketing: { name: 'Маркетинг',           letter: 'М' },
+  content:   { name: 'Контент',             letter: 'К' },
+};
+const TYPES_DEF = {
+  media_banner:     { label: 'Медиабаннер',     owner: 'X5 Media' },
+  product_carousel: { label: 'Карусель товаров', owner: 'Маркетинг' },
+  recipe:            { label: 'Рецепт',           owner: 'Контент' },
+};
+
+const RULES = {
+  'main.endless_recommendation': {
+    priority: ['x5_media', 'marketing', 'content'],
+    types: {
+      media_banner:     { enabled: true,  freq: 5 },
+      product_carousel: { enabled: true,  freq: 8 },
+      recipe:            { enabled: false, freq: 10 },
+    },
+    diversity: { no_consecutive_stakeholder: true, no_consecutive_type: true },
+  },
+  'cart.recsys.addon': {
+    priority: ['marketing', 'content', 'x5_media'],
+    types: {
+      media_banner:     { enabled: false, freq: 5 },
+      product_carousel: { enabled: true,  freq: 4 },
+      recipe:            { enabled: true,  freq: 6 },
+    },
+    diversity: { no_consecutive_stakeholder: true, no_consecutive_type: false },
+  },
+};
+
+const STATE = { selectedId: null };
+
+function fallbackChain(priority) {
+  return priority.map((key, i) => ({ key, fallbackTo: priority[i + 1] || null }));
+}
+
+function renderList() {
+  document.getElementById('count').textContent = `(${PLACEMENTS.length})`;
+  document.getElementById('tbody').innerHTML = PLACEMENTS.map(p => `
+    <tr data-id="${p.id}" class="${STATE.selectedId === p.id ? 'active' : ''}">
+      <td><div>${p.title}</div><span class="pid">${p.id}</span></td>
+      <td>${p.source}<br><span style="color:var(--text-dim); font-size:11px;">${p.owner}</span></td>
+      <td>${p.media_rules ? '<span class="chip on">заданы</span>' : '<span class="chip">—</span>'}</td>
+    </tr>
+  `).join('');
+  document.querySelectorAll('#tbody tr').forEach(tr => {
+    tr.addEventListener('click', () => { STATE.selectedId = tr.dataset.id; renderList(); renderDetail(); });
+  });
+}
+
+function renderDetail() {
+  const p = PLACEMENTS.find(x => x.id === STATE.selectedId);
+  const el = document.getElementById('detail');
+  if (!p) { el.innerHTML = '<div class="placeholder">Выберите плейсмент слева</div>'; return; }
+
+  let html = `
+    <div class="block">
+      <div class="block-head"><span class="n">1</span><h3>Плейсмент</h3></div>
+      <div class="block-body">
+        <dl class="dl">
+          <dt>ID</dt><dd style="font-family:ui-monospace, monospace; font-size:12.5px;">${p.id}</dd>
+          <dt>Экран</dt><dd>${p.screen}</dd>
+          <dt>Источник товаров</dt><dd>${p.source}</dd>
+          <dt>Владелец</dt><dd>${p.owner}</dd>
+          <dt>Статус</dt><dd>${p.status}</dd>
+        </dl>
+      </div>
+    </div>
+  `;
+
+  const r = RULES[p.id];
+  if (!r) {
+    html += `
+      <div class="block">
+        <div class="block-head"><span class="n">2</span><h3>Правила встраивания</h3></div>
+        <div class="block-body">
+          <div class="empty-note">Не заданы — плейсмент не участвует во встраивании объектов стейкхолдеров.</div>
+        </div>
+      </div>
+    `;
+    el.innerHTML = html;
+    return;
+  }
+
+  const chain = fallbackChain(r.priority);
+  html += `
+    <div class="block">
+      <div class="block-head"><span class="n">2</span><h3>Правила встраивания</h3><span class="hint">редактируется в реестре</span></div>
+      <div class="block-body">
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Приоритет стейкхолдеров — определяет, чей объект встраивается первым; ниже по списку — fallback, если объектов нет.</div>
+        <div id="stakeholderList">
+          ${chain.map((s, idx) => stakeholderRowHtml(s, idx, chain.length)).join('')}
+        </div>
+
+        <div style="font-size:12px; color:var(--text-muted); margin:16px 0 8px;">Типы встраиваемых объектов и частота (каждый N-й слот ленты)</div>
+        <div id="typeList">
+          ${Object.keys(r.types).map(k => typeRowHtml(k, r.types[k])).join('')}
+        </div>
+
+        <div style="font-size:12px; color:var(--text-muted); margin:16px 0 4px;">Правила разнообразия</div>
+        <div class="diversity-row">
+          <span class="label">Не подряд один стейкхолдер<span class="sub">запрещает 2 объекта одного стейкхолдера подряд</span></span>
+          ${toggleHtml('dr-stakeholder', r.diversity.no_consecutive_stakeholder)}
+        </div>
+        <div class="diversity-row">
+          <span class="label">Не подряд один тип объекта<span class="sub">запрещает 2 объекта одного типа подряд</span></span>
+          ${toggleHtml('dr-type', r.diversity.no_consecutive_type)}
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-head"><span class="n">3</span><h3>Передача в Каталог</h3><span class="hint">read-only</span></div>
+      <div class="block-body">
+        <pre class="json" id="jsonPreview">${jsonPreview(p, r)}</pre>
+        <div class="sync-note">MS Catalog забирает эти правила из реестра раз в час и кэширует — реестр не участвует в обработке запроса пользователя, скорость приложения не меняется.</div>
+      </div>
+    </div>
+  `;
+  el.innerHTML = html;
+  wireDetailEvents(p, r);
+}
+
+function stakeholderRowHtml(s, idx, total) {
+  const def = STAKEHOLDERS_DEF[s.key];
+  const fallbackDef = s.fallbackTo ? STAKEHOLDERS_DEF[s.fallbackTo] : null;
+  return `
+    <div class="stakeholder-row" data-key="${s.key}" data-first="${idx === 0}">
+      <span class="prio">${idx + 1}</span>
+      <span class="badge">${def.letter}</span>
+      <div>
+        <div class="name">${def.name}</div>
+        <div class="fallback">${fallbackDef ? `fallback → ${fallbackDef.name}` : 'fallback — нет (конец цепочки)'}</div>
+      </div>
+      <div class="order-btns">
+        <button class="up" ${idx === 0 ? 'disabled' : ''} title="Повысить приоритет">↑</button>
+        <button class="down" ${idx === total - 1 ? 'disabled' : ''} title="Понизить приоритет">↓</button>
+      </div>
+    </div>
+  `;
+}
+
+function typeRowHtml(key, cfg) {
+  const def = TYPES_DEF[key];
+  return `
+    <div class="type-row" data-key="${key}">
+      <div>
+        <div class="tname">${def.label}</div>
+        <div class="towner">${def.owner}</div>
+      </div>
+      <div class="freq">
+        <span>каждый</span>
+        <input type="number" min="1" max="30" value="${cfg.freq}" ${cfg.enabled ? '' : 'disabled'} class="freq-input">
+        <span>-й слот</span>
+      </div>
+      ${toggleHtml('type-' + key, cfg.enabled)}
+    </div>
+  `;
+}
+
+function toggleHtml(id, checked) {
+  return `<label class="toggle"><input type="checkbox" id="${id}" ${checked ? 'checked' : ''}><span class="track"></span><span class="knob"></span></label>`;
+}
+
+function jsonPreview(p, r) {
+  const chain = fallbackChain(r.priority);
+  const obj = {
+    placement_id: p.id,
+    embedding_rules: {
+      stakeholder_priority: chain.map(s => ({ stakeholder: s.key, fallback_to: s.fallbackTo })),
+      object_types: Object.keys(r.types).filter(k => r.types[k].enabled).map(k => ({ type: k, frequency: r.types[k].freq })),
+      diversity: r.diversity,
+    },
+  };
+  return escapeHtml(JSON.stringify(obj, null, 2));
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+}
+
+// ── Пример полного контракта: что реестр отдаёт Каталогу по всем полкам ──
+function embeddingRulesFor(id) {
+  const r = RULES[id];
+  if (!r) return null;
+  const chain = fallbackChain(r.priority);
+  return {
+    stakeholder_priority: chain.map(s => ({ stakeholder: s.key, fallback_to: s.fallbackTo })),
+    object_types: Object.keys(r.types).filter(k => r.types[k].enabled).map(k => ({ type: k, frequency: r.types[k].freq })),
+    diversity: r.diversity,
+  };
+}
+
+function buildFullContract() {
+  return {
+    shelves: PLACEMENTS.map(p => ({
+      placement_id: p.id,
+      screen: p.screen,
+      source: p.source.toLowerCase(),
+      embedding_rules: embeddingRulesFor(p.id),
+    })),
+  };
+}
+
+function renderContract() {
+  document.getElementById('contractJson').innerHTML = escapeHtml(JSON.stringify(buildFullContract(), null, 2));
+}
+
+function wireTabs() {
+  document.querySelectorAll('.vtab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.vtab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('view-' + tab.dataset.view).classList.add('active');
+      if (tab.dataset.view === 'contract') renderContract();
+    });
+  });
+}
+
+function wireDetailEvents(p, r) {
+  document.querySelectorAll('.stakeholder-row .up').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.closest('.stakeholder-row').dataset.key;
+      const idx = r.priority.indexOf(key);
+      if (idx > 0) { [r.priority[idx - 1], r.priority[idx]] = [r.priority[idx], r.priority[idx - 1]]; renderDetail(); }
+    });
+  });
+  document.querySelectorAll('.stakeholder-row .down').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.closest('.stakeholder-row').dataset.key;
+      const idx = r.priority.indexOf(key);
+      if (idx < r.priority.length - 1) { [r.priority[idx + 1], r.priority[idx]] = [r.priority[idx], r.priority[idx + 1]]; renderDetail(); }
+    });
+  });
+  document.querySelectorAll('.type-row').forEach(row => {
+    const key = row.dataset.key;
+    row.querySelector('input[type=checkbox]').addEventListener('change', e => {
+      r.types[key].enabled = e.target.checked; renderDetail();
+    });
+    row.querySelector('.freq-input').addEventListener('change', e => {
+      r.types[key].freq = parseInt(e.target.value, 10) || 1; renderDetail();
+    });
+  });
+  const drS = document.getElementById('dr-stakeholder');
+  const drT = document.getElementById('dr-type');
+  if (drS) drS.addEventListener('change', e => { r.diversity.no_consecutive_stakeholder = e.target.checked; renderDetail(); });
+  if (drT) drT.addEventListener('change', e => { r.diversity.no_consecutive_type = e.target.checked; renderDetail(); });
+}
+
+renderList();
+wireTabs();
+</script>
+</body>
+</html>
